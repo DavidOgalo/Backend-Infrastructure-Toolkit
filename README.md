@@ -40,8 +40,8 @@ backend-infrastructure-toolkit/
 │   │   │   ├── readme.md
 │   │   │   └── examples/
 │   │   └── [other systems under category]/
-│   ├── [other component categories]/
-│   └── shared/  # helpers, base classes, utilities
+│   └── [other component categories]/
+├── core-utils/ # utilities, helpers, base classes
 ├── tests/
 ├── requirements.txt
 └── readme.md
