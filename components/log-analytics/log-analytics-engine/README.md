@@ -11,11 +11,6 @@ A production-ready, high-performance log analytics engine for real-time log inge
 - [Architecture](#architecture)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Basic Example](#basic-example)
-  - [Log Ingestion](#log-ingestion)
-  - [Querying Logs](#querying-logs)
-  - [Alerting](#alerting)
-  - [Metrics & Stats](#metrics--stats)
 - [API Reference](#api-reference)
 - [Extending the Engine](#extending-the-engine)
 - [Testing](#testing)
@@ -72,20 +67,33 @@ pip install -r requirements.txt  # (No external dependencies by default)
 
 ## Usage
 
-### Basic Example
+### Example Scenarios & Usage
 
-Run the demo included in `log_analytics_engine.py`:
+All usage scenarios and demos are now provided as standalone scripts in the `examples/` directory:
 
-```bash
-python log_analytics_engine.py
+- `examples/ingest_and_query.py`: Ingest logs and perform queries
+- `examples/alerting_demo.py`: Alerting use-case
+- `examples/dashboard_metrics.py`: Dashboard metrics and stats
+
+**How to run an example:**
+
+> **Important:** Always run the example scripts with the parent directory in your `PYTHONPATH` so that imports work correctly.
+
+On Windows PowerShell:
+
+```pwsh
+$env:PYTHONPATH="."; python .\examples\alerting_demo.py
 ```
 
-This will:
+On Linux/macOS/bash:
 
-- Ingest 100+ simulated logs
-- Add an alert rule (e.g., trigger on 3+ ERRORs in 2 minutes)
-- Query logs by time, level, and keyword
-- Print triggered alerts and engine stats
+```bash
+PYTHONPATH=. python ./examples/alerting_demo.py
+```
+
+Replace `alerting_demo.py` with any other example script as needed.
+
+These scripts demonstrate real-world backend scenarios, including log ingestion, querying, alerting, and dashboard metrics. You can use or extend them for your own use-cases.
 
 ### Log Ingestion
 
