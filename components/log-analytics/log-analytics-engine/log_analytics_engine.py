@@ -55,6 +55,22 @@ class AlertSeverity(Enum):
 
 @dataclass
 class LogEntry:
+    def __hash__(self):
+        """
+        Make LogEntry hashable so it can be used in sets and as dict keys.
+        Hash is based on immutable identifying fields (e.g., timestamp, level, message, source).
+        """
+        return hash((self.timestamp, self.level, self.message, self.source))
+
+    def __eq__(self, other):
+        if not isinstance(other, LogEntry):
+            return False
+        return (
+            self.timestamp == other.timestamp and
+            self.level == other.level and
+            self.message == other.message and
+            self.source == other.source
+        )
     """Enhanced log entry with comprehensive metadata"""
     timestamp: str
     level: str
@@ -349,3 +365,227 @@ class BinarySearchTree:
         result: List[Tuple[str, Any]] = []
         self._inorder(self.root, result)
         return result
+    
+# =============================
+# Log Analytics Engine
+# =============================
+
+class LogAnalyticsEngine:
+    """
+    Main log analytics engine supporting real-time ingestion, multi-indexing, querying, and alerting.
+    """
+    def __init__(self):
+        # Time index (BST by timestamp string)
+        self.time_index = BinarySearchTree()
+        # Level index: level -> list of LogEntry
+        self.level_index = defaultdict(list)
+        # Source index: source -> list of LogEntry
+        self.source_index = defaultdict(list)
+        # Keyword inverted index: keyword -> set of LogEntry
+        self.keyword_index = defaultdict(set)
+        # All logs (for batch/iteration)
+        self.all_logs = []
+        # Alert rules and triggered alerts
+        self.alert_rules: List[AlertRule] = []
+        self.triggered_alerts: List[Alert] = []
+        # Thread safety
+        self._lock = threading.RLock()
+
+    def ingest_log(self, log: LogEntry):
+        """
+        Ingest a log entry, update all indexes, and check alerts.
+        """
+        with self._lock:
+            self.all_logs.append(log)
+            # Index by time (use ISO timestamp string as key)
+            self.time_index.insert(log.timestamp, log)
+            # Index by level
+            self.level_index[log.level.upper()].append(log)
+            # Index by source
+            if log.source:
+                self.source_index[log.source].append(log)
+            # Index by keywords (split message into words)
+            for word in set(re.findall(r'\w+', log.message.lower())):
+                self.keyword_index[word].add(log)
+            # Check alert rules
+            self._check_alerts(log)
+
+    def ingest_logs(self, logs: List[LogEntry]):
+        """
+        Ingest a batch of log entries.
+        """
+        for log in logs:
+            self.ingest_log(log)
+
+    def query_logs(self, filters: Dict[str, Any]) -> List[LogEntry]:
+        """
+        Query logs using filters: time range, level, source, keywords, tags, min_severity, etc.
+        Returns a list of matching LogEntry objects.
+        """
+        with self._lock:
+            # Time range filter (if present)
+            logs = self.all_logs
+            if 'start_time' in filters and 'end_time' in filters:
+                start = filters['start_time']
+                end = filters['end_time']
+                logs = self.time_index.range_query(start, end)
+            # Level filter
+            if 'level' in filters:
+                logs = [log for log in logs if log.level.upper() == filters['level'].upper()]
+            # Source filter
+            if 'source' in filters:
+                logs = [log for log in logs if log.source == filters['source']]
+            # Keyword filter
+            if 'keyword' in filters:
+                kw = filters['keyword'].lower()
+                logs = [log for log in logs if kw in log.message.lower()]
+            # Tags filter
+            if 'tags' in filters:
+                tags = set(filters['tags'])
+                logs = [log for log in logs if tags.intersection(set(log.tags))]
+            # Min severity filter
+            if 'min_severity' in filters:
+                min_score = filters['min_severity']
+                logs = [log for log in logs if log.severity_score >= min_score]
+            return logs
+
+    def add_alert_rule(self, rule: AlertRule):
+        """Add an alert rule."""
+        self.alert_rules.append(rule)
+
+    def _check_alerts(self, log: LogEntry):
+        """
+        Check all alert rules for the new log entry and trigger alerts if needed.
+        """
+        now = time.time()
+        for rule in self.alert_rules:
+            if not rule.enabled:
+                continue
+            # Count matching logs in the time window
+            window_start = now - rule.time_window
+            count = 0
+            sample_logs = []
+            for l in reversed(self.all_logs):
+                if l.parsed_time and l.parsed_time.timestamp() < window_start:
+                    break
+                if l.matches_filter(rule.conditions):
+                    count += 1
+                    if len(sample_logs) < 5:
+                        sample_logs.append(l)
+            if rule.should_trigger(count, now):
+                alert = Alert(
+                    rule_name=rule.name,
+                    message=f"Alert '{rule.name}' triggered: {count} matches in {rule.time_window}s.",
+                    severity=rule.severity,
+                    triggered_at=datetime.now(timezone.utc),
+                    count=count,
+                    sample_logs=sample_logs[::-1],
+                )
+                self.triggered_alerts.append(alert)
+                rule.last_triggered = now
+                logger.warning(f"ALERT: {alert.message}")
+
+    def get_alerts(self) -> List[Alert]:
+        """Return all triggered alerts."""
+        return self.triggered_alerts
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Return summary statistics about ingested logs."""
+        with self._lock:
+            return {
+                'total_logs': len(self.all_logs),
+                'levels': {level: len(logs) for level, logs in self.level_index.items()},
+                'sources': {src: len(logs) for src, logs in self.source_index.items()},
+                'keywords': len(self.keyword_index),
+            }
+
+# =============================
+# Demo: Simulated Log Ingestion & Query
+# =============================
+
+if __name__ == "__main__":
+    import random
+    # Simulate log entries
+    levels = ["INFO", "DEBUG", "WARN", "ERROR"]
+    sources = ["auth", "api", "db", "worker"]
+    messages = [
+        "User login successful",
+        "User login failed",
+        "Database connection error",
+        "API request timeout",
+        "Worker started",
+        "Worker stopped",
+        "Cache miss",
+        "Cache hit",
+        "Permission denied",
+        "Resource not found"
+    ]
+
+    def random_log(ts_offset=0):
+        now = datetime.now(timezone.utc) - timedelta(seconds=ts_offset)
+        return LogEntry(
+            timestamp=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            level=random.choice(levels),
+            message=random.choice(messages),
+            source=random.choice(sources),
+            tags=[random.choice(["auth", "api", "db", "worker", "cache"])]
+        )
+
+    from datetime import timedelta
+    engine = LogAnalyticsEngine()
+
+    # Ingest 100 simulated logs over the last 10 minutes
+    for i in range(100):
+        log = random_log(ts_offset=random.randint(0, 600))
+        engine.ingest_log(log)
+
+    # Add an alert rule: 3+ ERRORs in 2 minutes triggers HIGH alert
+    error_alert = AlertRule(
+        name="High Error Rate",
+        description="Trigger if 3+ ERROR logs in 2 minutes",
+        conditions={"level": "ERROR"},
+        severity=AlertSeverity.HIGH,
+        threshold=3,
+        time_window=120,
+        cooldown=60
+    )
+    engine.add_alert_rule(error_alert)
+
+    # Ingest more ERROR logs to trigger alert
+    for _ in range(5):
+        log = LogEntry(
+            timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            level="ERROR",
+            message="Simulated error for alert demo",
+            source="api",
+            tags=["api"]
+        )
+        engine.ingest_log(log)
+
+    # Query: All ERROR logs in the last 5 minutes
+    start = (datetime.now(timezone.utc) - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    error_logs = engine.query_logs({"start_time": start, "end_time": end, "level": "ERROR"})
+    print(f"\nERROR logs in last 5 minutes: {len(error_logs)}")
+    for log in error_logs[:3]:
+        print(f"[{log.timestamp}] {log.level} {log.source}: {log.message}")
+    if len(error_logs) > 3:
+        print(f"...and {len(error_logs)-3} more")
+
+    # Query: All logs with 'cache' keyword
+    cache_logs = engine.query_logs({"keyword": "cache"})
+    print(f"\nLogs with 'cache' keyword: {len(cache_logs)}")
+    for log in cache_logs[:3]:
+        print(f"[{log.timestamp}] {log.level} {log.source}: {log.message}")
+    if len(cache_logs) > 3:
+        print(f"...and {len(cache_logs)-3} more")
+
+    # Show triggered alerts
+    alerts = engine.get_alerts()
+    print(f"\nTriggered alerts: {len(alerts)}")
+    for alert in alerts:
+        print(f"[{alert.triggered_at}] {alert.severity.value.upper()} {alert.rule_name}: {alert.message}")
+
+    # Show stats
+    print("\nEngine stats:")
+    print(engine.get_stats())
