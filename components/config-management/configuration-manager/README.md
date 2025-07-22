@@ -43,7 +43,7 @@ All usage, including quick-start and advanced scenarios, is provided as standalo
 
 - `examples/basic_usage.py`: Initialize the configuration manager, access configs, view metrics, and use temporary overrides.
 
-See the `examples/` directory for more advanced and scenario-based usage scripts.
+See the `examples/` directory and `examples/README.md` for more advanced and scenario-based usage scripts.
 
 **How to run an example:**
 

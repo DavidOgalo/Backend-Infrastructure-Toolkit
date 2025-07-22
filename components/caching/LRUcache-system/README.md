@@ -37,14 +37,9 @@ pip install -r requirements.txt  # if dependencies are needed
 
 ### Usage & Example Scenarios
 
-All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here are a few key examples:
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here is a key example:
 
 - `examples/basic_usage.py`: Basic set/get, batch operations, metrics, and health check.
-- `examples/batch_and_eviction.py`: Batch operations and LRU eviction scenario.
-- `examples/ttl_expiry.py`: Demonstrates automatic expiration of cache items (TTL).
-- `examples/function_decorator.py`: Function result caching using the lru_cache decorator.
-- `examples/serialization.py`: Save and restore cache state (serialization/deserialization).
-- `examples/metrics_and_hooks.py`: Track cache metrics and observe event hooks.
 
 See the `examples/` directory and `examples/README.md` for more advanced and scenario-based usage scripts.
 

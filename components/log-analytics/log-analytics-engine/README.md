@@ -69,7 +69,7 @@ pip install -r requirements.txt  # (No external dependencies by default)
 
 ### Usage & Example Scenarios
 
-All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here are a few key examples:
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here is a key example:
 
 - `examples/basic_usage.py`: Ingest a log and perform a simple query
 
