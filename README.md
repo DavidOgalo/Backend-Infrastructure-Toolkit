@@ -37,14 +37,17 @@ backend-infrastructure-toolkit/
 │   ├── component-category/
 │   │   ├── system-name/
 │   │   │   ├── system_implementation.py
-│   │   │   ├── readme.md
+│   │   │   ├── system README.md
 │   │   │   └── examples/
-│   │   └── [other systems under category]/
-│   └── [other component categories]/
+│   │   │       ├── example_script.py
+│   │   │       ├── ...other scenario-based scripts
+│   │   │       └── examples README.md
+│   │   └── ...other systems under category/
+│   └── ...other component categories/
 ├── core-utils/ # utilities, helpers, base classes
 ├── tests/
 ├── requirements.txt
-└── readme.md
+└── main README.md
 ```
 
 ## Component Categories
