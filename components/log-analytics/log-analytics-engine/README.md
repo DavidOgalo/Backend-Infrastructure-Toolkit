@@ -67,13 +67,15 @@ pip install -r requirements.txt  # (No external dependencies by default)
 
 ## Usage
 
-### Example Scenarios & Usage
+### Usage & Example Scenarios
 
-All usage scenarios and demos are now provided as standalone scripts in the `examples/` directory:
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here are a few key examples:
 
 - `examples/ingest_and_query.py`: Ingest logs and perform queries
 - `examples/alerting_demo.py`: Alerting use-case
 - `examples/dashboard_metrics.py`: Dashboard metrics and stats
+
+See the `examples/` directory for more advanced and scenario-based usage scripts.
 
 **How to run an example:**
 
@@ -94,6 +96,24 @@ PYTHONPATH=. python ./examples/alerting_demo.py
 Replace `alerting_demo.py` with any other example script as needed.
 
 These scripts demonstrate real-world backend scenarios, including log ingestion, querying, alerting, and dashboard metrics. You can use or extend them for your own use-cases.
+
+#### Minimal Quick-Start (copy-paste into your own script)
+
+```python
+from log_analytics_engine import LogAnalyticsEngine, LogEntry
+
+engine = LogAnalyticsEngine()
+log = LogEntry(
+    timestamp="2025-07-21T12:00:00Z",
+    level="ERROR",
+    message="Database connection failed",
+    source="db",
+    tags=["db", "critical"]
+)
+engine.ingest_log(log)
+```
+
+> **Note:** The main implementation file does not contain any demo or usage code. All examples are in the `examples/` folder for clarity and best practice.
 
 ### Log Ingestion
 
