@@ -35,44 +35,47 @@ pip install -r requirements.txt  # if dependencies are needed
 
 ## Usage
 
-### Basic Example
+### Usage & Example Scenarios
 
-```python
-from LRUcache_system import LRUCache, LoggingHook
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here are a few key examples:
 
-# Create a cache with a max size of 5 and 10s TTL
-cache = LRUCache[str, dict](max_size=5, default_ttl=10.0, enable_metrics=True)
+- `examples/basic_usage.py`: Basic set/get, batch operations, metrics, and health check.
+- `examples/batch_and_eviction.py`: Batch operations and LRU eviction scenario.
+- `examples/ttl_expiry.py`: Demonstrates automatic expiration of cache items (TTL).
+- `examples/function_decorator.py`: Function result caching using the lru_cache decorator.
+- `examples/serialization.py`: Save and restore cache state (serialization/deserialization).
+- `examples/metrics_and_hooks.py`: Track cache metrics and observe event hooks.
 
-# Add a logging hook for observability
-cache.add_hook(LoggingHook())
+See the `examples/` directory and `examples/README.md` for more advanced and scenario-based usage scripts.
 
-# Set and get values
-cache.set("user:1", {"name": "John"})
-user = cache.get("user:1")
+**How to run an example:**
 
-# Batch operations
-with cache.batch_operations():
-    cache.set_many({
-        "user:2": {"name": "Jane"},
-        "user:3": {"name": "Bob"}
-    })
-users = cache.get_many(["user:1", "user:2"])
+> **Important:** Always run the example scripts with the parent directory in your `PYTHONPATH` so that imports work correctly.
 
-# Metrics and health
-print(cache.get_metrics())
-print(cache.health_check())
+On Windows PowerShell:
+
+```pwsh
+$env:PYTHONPATH="."; python .\examples\basic_usage.py
 ```
 
-### Function Result Caching
+On Linux/macOS/bash:
+
+```bash
+PYTHONPATH=. python ./examples/basic_usage.py
+```
+
+Replace `basic_usage.py` with any other example script as needed.
+
+These scripts demonstrate real-world backend scenarios, including LRU eviction, TTL expiry, batch operations, metrics, hooks, and serialization. You can use or extend them for your own use-cases.
+
+#### Minimal Quick-Start (copy-paste into your own script)
 
 ```python
-from LRUcache_system import lru_cache
+from LRUcache_system import LRUCache
 
-@lru_cache(maxsize=10, ttl=5.0)
-def expensive_function(x, y):
-    return x + y
-
-result = expensive_function(1, 2)
+cache = LRUCache(max_size=5, default_ttl=10.0)
+cache.set("foo", "bar")
+print(cache.get("foo"))
 ```
 
 ---
