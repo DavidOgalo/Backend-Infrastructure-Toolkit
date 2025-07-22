@@ -109,7 +109,7 @@ pip install -r requirements.txt
 
 ### Quick Start
 
-Each system implementation includes an `examples/` folder with standalone, scenario-based, and advanced use-case example scripts.
+Each system implementation includes an `examples/` folder with standalone, scenario-based, and advanced use-case example scripts. The main implementation file is focused on the core logic, with no demo or usage code.
 
 **To run an example script, always set `PYTHONPATH` to the directory containing the system implementation (the parent directory) before running your example script. This is standard for local development in Python monorepos.**
 
