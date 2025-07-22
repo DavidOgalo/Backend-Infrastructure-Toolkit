@@ -37,7 +37,35 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Example
+### Usage & Example Scenarios
+
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here is a key example:
+
+- `examples/basic_usage.py`: Initialize the configuration manager, access configs, view metrics, and use temporary overrides.
+
+See the `examples/` directory for more advanced and scenario-based usage scripts.
+
+**How to run an example:**
+
+> **Important:** Always run the example scripts with the parent directory in your `PYTHONPATH` so that imports work correctly.
+
+On Windows PowerShell:
+
+```pwsh
+$env:PYTHONPATH="."; python .\examples\basic_usage.py
+```
+
+On Linux/macOS/bash:
+
+```bash
+PYTHONPATH=. python ./examples/basic_usage.py
+```
+
+Replace `basic_usage.py` with any other example script as needed.
+
+These scripts demonstrate real-world backend scenarios, including config loading, validation, encryption, and observability. You can use or extend them for your own use-cases.
+
+#### Minimal Quick-Start (copy-paste into your own script)
 
 ```python
 from config_manager import ConfigManager
@@ -47,25 +75,9 @@ config = ConfigManager(
     enable_hot_reload=True,
     enable_encryption=True
 )
-
-# Access config values
-host = config.get('database.host')
-api_key = config.get('api.key')
-
-# Set a value (optionally encrypted)
-config.set('database.password', 'supersecret', encrypt=True)
-
-# Use validated helpers
-db_cfg = config.get_database_config()
-api_cfg = config.get_api_config()
-
-# Add a change listener
-config.add_change_listener(lambda event, old, new: print("Config changed!"))
-
-# Metrics and health
-print(config.get_metrics())
-print(config.health_check())
 ```
+
+---
 
 ### Environment Variable Overrides
 
@@ -139,5 +151,3 @@ Use `get_metrics()` to retrieve metrics for monitoring and alerting.
 
 - Unit and integration tests are recommended for your config schemas and usage.
 - Use the `temporary_override` context manager for test isolation.
-
----
