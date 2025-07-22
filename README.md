@@ -35,8 +35,8 @@ All backend infrastructure systems are organized under `components/`, grouped by
 backend-infrastructure-toolkit/
 ├── components/
 │   ├── component-category/
-│   │   ├── system/
-│   │   │   ├── implementation.py
+│   │   ├── system-name/
+│   │   │   ├── system_implementation.py
 │   │   │   ├── readme.md
 │   │   │   └── examples/
 │   │   └── [other systems under category]/
@@ -109,13 +109,23 @@ pip install -r requirements.txt
 
 ### Quick Start
 
-Each implementation includes standalone examples:
+Each system implementation includes an `examples/` folder with standalone, scenario-based, and advanced use-case example scripts.
+
+**To run an example script, always set `PYTHONPATH` to the directory containing the system implementation (the parent directory) before running your example script. This is standard for local development in Python monorepos.**
+
+On Windows PowerShell:
+
+```pwsh
+$env:PYTHONPATH="."; python .\examples\example_script.py
+```
+
+On Linux/macOS/bash:
 
 ```bash
-# System implementation
-cd components/component-category/system
-python examples/server_usecase.py
+PYTHONPATH=. python ./examples/example_script.py
 ```
+
+Replace `example_script` with the relevant example script for your system.
 
 ## Learning Objectives
 
@@ -151,7 +161,6 @@ Each implementation includes:
 - **Performance Metrics**: Response times, throughput, error rates
 - **Health Checks**: System status and resource utilization
 - **Alerting**: Configurable thresholds and notifications
-<!-- - **Dashboards**: Real-time visualization capabilities -->
 
 ## Contributing
 
