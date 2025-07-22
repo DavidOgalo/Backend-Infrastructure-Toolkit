@@ -43,7 +43,8 @@ backend-infrastructure-toolkit/
 │   │   │       ├── ...other scenario-based scripts
 │   │   │       └── examples README.md
 │   │   └── ...other systems under category/
-│   └── ...other component categories/
+│   ├── ...other component categories/
+│   └── [future-implementations]/
 ├── core-utils/ # utilities, helpers, base classes
 ├── tests/
 ├── requirements.txt
