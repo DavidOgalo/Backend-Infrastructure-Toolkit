@@ -27,6 +27,7 @@ from cryptography.fernet import Fernet
 import hashlib
 from functools import wraps
 from contextlib import contextmanager
+import requests
 
 # Configure structured logging
 logging.basicConfig(
@@ -117,6 +118,41 @@ class ConfigEncryption:
         """Check if a value is encrypted"""
         return value.startswith('enc:')
 
+
+class RemoteConfigLoader:
+    """
+    Base class for remote configuration loaders.
+    Implement fetch() to return a config dict from a remote source.
+    """
+    def fetch(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class HTTPConfigLoader(RemoteConfigLoader):
+    """
+    Loads configuration from a remote HTTP endpoint (expects JSON response).
+    Includes basic retry logic for robustness.
+    """
+    def __init__(self, url: str, headers: Optional[Dict[str, str]] = None, retries: int = 3, timeout: int = 5):
+        self.url = url
+        self.headers = headers or {}
+        self.retries = retries
+        self.timeout = timeout
+
+    def fetch(self) -> Dict[str, Any]:
+        last_exc = None
+        for attempt in range(1, self.retries + 1):
+            try:
+                response = requests.get(self.url, headers=self.headers, timeout=self.timeout)
+                response.raise_for_status()
+                return response.json() # Assumes JSON config
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(f"HTTPConfigLoader attempt {attempt} failed: {exc}")
+                time.sleep(1)
+        logger.error(f"HTTPConfigLoader failed after {self.retries} attempts: {last_exc}")
+        raise last_exc
+
 class ConfigManager:
     """
     Production-ready configuration manager with advanced features:
@@ -135,11 +171,13 @@ class ConfigManager:
                  enable_hot_reload: bool = True,
                  reload_interval: int = 30,
                  enable_encryption: bool = False,
-                 encryption_key: Optional[bytes] = None):
+                 encryption_key: Optional[bytes] = None,
+                 remote_loaders: Optional[List[RemoteConfigLoader]] = None):
         
         self.config_files = config_files or ["config.json", "config.yaml"]
         self.enable_hot_reload = enable_hot_reload
         self.reload_interval = reload_interval
+        self.remote_loaders = remote_loaders or []
         
         # Thread safety
         self._lock = threading.RLock()
@@ -192,7 +230,15 @@ class ConfigManager:
             for config_file in self.config_files:
                 if os.path.exists(config_file):
                     self._load_config_file(config_file)
-            
+            #Load from remote sources 
+            for loader in self.remote_loaders:
+                try:
+                    remote_config = loader.fetch()
+                    self._deep_merge(self._config, remote_config)
+                    logger.info(f"Loaded remote config from {type(loader).__name__}")
+                except Exception as e:
+                    logger.error(f"Remote config loader error: {e}")
+                    
             # Override with environment variables
             self._load_environment_overrides()
             
