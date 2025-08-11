@@ -1,4 +1,3 @@
-
 # Configuration Management System
 
 A production-ready, thread-safe configuration manager with advanced features for modern backend services.
@@ -11,7 +10,7 @@ This configuration management system provides a robust solution for handling app
 
 ### Core Functionality
 
-- **Multi-Source Configuration**: JSON, YAML, environment variables (remote sources planned for v2)
+- **Multi-Source Configuration**: JSON, YAML, environment variables, and now remote sources via pluggable loaders (see RemoteConfigLoader)
 - **Hot Reloading**: Automatic configuration updates with file watching
 - **Thread-Safe Operations**: Full thread safety with read/write locks
 - **Nested Key Access**: Dot notation for hierarchical configuration (`database.host`)
@@ -23,7 +22,7 @@ This configuration management system provides a robust solution for handling app
 - **Change Listeners**: Event-driven configuration updates
 - **Comprehensive Metrics**: Access patterns, cache hit rates, reload statistics
 - **Health Monitoring**: Built-in health checks and status reporting
-- **Extensibility**: Plugin/extension interfaces for new sources and hooks (planned for v2)
+- **Extensibility**: Plugin/extension interfaces for new sources and hooks. Now supports remote config loading via pluggable loader interfaces (e.g., HTTP, S3, etcd, Consul).
 
 ### Production Ready
 
@@ -44,8 +43,9 @@ ConfigManager
 ├── Encryption Engine
 ├── Cache Layer
 ├── Change Detection
-└── Metrics Collection
-# (Remote sources and plugin/extension interfaces coming in v2)
+├── Metrics Collection
+├── Remote Sources (via RemoteConfigLoader, HTTPConfigLoader, etc.)
+└── Plugin/Extension Interfaces
 ```
 
 ## Use Cases
@@ -125,6 +125,18 @@ with config.temporary_override('database.host', 'test-db'):
     # Configuration temporarily changed
     test_connection()
 # Configuration restored
+
+### Remote Configuration Loader Example
+
+```python
+from config_manager import ConfigManager, HTTPConfigLoader
+
+# Use a remote HTTP config source
+http_loader = HTTPConfigLoader(url="https://example.com/config.json", max_retries=3)
+config = ConfigManager(remote_loaders=[http_loader])
+
+# Access remote config values
+api_key = config.get('api.key')
 ```
 
 ## Configuration Format
@@ -531,6 +543,7 @@ Use `get_metrics()` to retrieve metrics for monitoring and alerting.
 
 - Register custom validators for new config sections (see `validators` dict).
 - Integrate with your logging/monitoring stack as needed.
-- **Planned for v2:** Add new config sources (e.g., remote, secrets manager) and plugin/extension interfaces for custom sources and hooks.
+- Add new config sources using the `RemoteConfigLoader` interface (e.g., HTTP, S3, etcd, Consul).
+- Extend with plugin/extension interfaces for custom sources and hooks.
 
 ---
