@@ -9,7 +9,7 @@ This repository demonstrates practical implementations of fundamental backend en
 **Toolkit Highlights:**
 
 - All systems are grouped by category for clarity and scalability.
-- Each system is self-contained, with its own implementation, documentation, scenario-based examples and system design documentation.
+- Each system is self-contained, with its own implementation, scenario-based examples, test cases, system documentation and system design documentation.
 - Core utilities and shared patterns are centralized in `core-utils/`.
 - The monorepo structure enables easy cross-system integration and code reuse.
 - Extensibility is built-in via plugin interfaces and modular design.
@@ -50,6 +50,7 @@ backend-infrastructure-toolkit/
 │   │   │   ├── system README.md
 │   │   │   ├── system_design document.md
 │   │   │   ├── system_design diagram.png
+│   │   │   ├── tests/
 │   │   │   └── examples/
 │   │   │       ├── example_script.py
 │   │   │       ├── ...other scenario-based scripts
@@ -58,7 +59,6 @@ backend-infrastructure-toolkit/
 │   ├── ...other component categories/
 │   └── [future-implementations]/
 ├── core-utils/ # utilities, helpers, base classes
-├── tests/
 ├── requirements.txt
 └── main README.md
 ```
