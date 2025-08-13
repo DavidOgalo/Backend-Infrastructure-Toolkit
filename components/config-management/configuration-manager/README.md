@@ -1,6 +1,11 @@
+
 # Configuration Management System
 
 A production-ready, thread-safe configuration manager with advanced features for modern backend services.
+
+## System Design & Architecture
+
+For a comprehensive overview of the system architecture, design rationale, and integration points, see [system_design.md](./system_design.md).
 
 ## Overview
 
@@ -38,7 +43,7 @@ Major modules and layers present and functional in the codebase
 ```python
 ConfigManager
 ├── File Sources (JSON/YAML)
-├── Environment Variables
+├── Environment Overrides
 ├── Validation Layer
 ├── Encryption Engine
 ├── Cache Layer
