@@ -472,6 +472,22 @@ class ConfigManager:
             if key_path in self._config_cache:
                 del self._config_cache[key_path]
     
+    def batch_get(self, key_paths: List[str], default: Any = None) -> Dict[str, Any]:
+        """Get multiple configuration values at once. Returns a dict of key_path: value."""
+        results = {}
+        for key in key_paths:
+            try:
+                results[key] = self.get(key, default)
+            except ConfigError:
+                results[key] = default
+        return results
+
+    def batch_set(self, items: Dict[str, Any], encrypt: bool = False):
+        """Set multiple configuration values at once. Accepts a dict of key_path: value."""
+        with self._lock:
+            for key, value in items.items():
+                self.set(key, value, encrypt=encrypt)
+    
     def get_database_config(self) -> Dict[str, Any]:
         """Get validated database configuration"""
         return {
