@@ -404,6 +404,8 @@ def test_environment_override():
 | `add_change_listener(callback)` | Add change listener | `None` |
 | `remove_change_listener(callback)` | Remove change listener | `None` |
 | `temporary_override(key, value)` | Context manager for temporary changes | `ContextManager` |
+| `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None` | Set multiple configuration values | `None` |
+| `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]` | Get multiple configuration values | `Dict[str, Any]` |
 
 ## Contributing
 
@@ -515,6 +517,8 @@ ConfigManager(
 - `get_metrics() -> Dict[str, Any]`: Get access, cache, reload, and validation metrics.
 - `health_check() -> Dict[str, Any]`: Get health and status info.
 - `temporary_override(key_path, value)`: Context manager for temporary config overrides.
+- `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None`: Set multiple configuration values.
+- `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]`: Get multiple configuration values.
 
 ---
 
@@ -584,3 +588,28 @@ config.add_hook_plugin(SlackNotificationHook())
 See `examples/plugin_examples.py` for a full demo.
 
 ---
+
+### Batch Operations Example
+
+You can set or get multiple configuration values efficiently using batch operations:
+
+```python
+from config_manager import ConfigManager
+
+config = ConfigManager()
+
+# Batch set
+config.batch_set({
+    'feature_flags.new_ui': True,
+    'feature_flags.advanced_analytics': False,
+    'database.host': 'localhost',
+    'database.port': 5432
+})
+
+# Batch get
+keys = ['feature_flags.new_ui', 'feature_flags.advanced_analytics', 'database.host', 'database.port', 'missing.key']
+results = config.batch_get(keys, default='N/A')
+print(results)
+```
+
+See `examples/batch_operations_example.py` for a full demo.
