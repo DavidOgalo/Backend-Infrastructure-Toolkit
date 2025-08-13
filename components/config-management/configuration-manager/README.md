@@ -299,38 +299,24 @@ The configuration manager automatically detects file changes and reloads configu
 
 ## Testing
 
-- Implemented unit and integration tests for the config schemas and usage.
+- Unit and integration tests are implemented separately in the `tests/` folder.
+- Unit tests cover isolated functionality (e.g., set/get, batch operations, temporary overrides, encryption).
+- Integration tests cover environment variable overrides and change listener behavior.
 - Used the `temporary_override` context manager for test isolation.
 
-### Unit Tests
+### Running Tests
 
-```python
-import unittest
-from config_manager import ConfigManager
+To run all tests:
 
-class TestConfigManager(unittest.TestCase):
-    def test_basic_config(self):
-        config = ConfigManager()
-        config.set('test.key', 'value')
-        self.assertEqual(config.get('test.key'), 'value')
-    
-    def test_temporary_override(self):
-        config = ConfigManager()
-        config.set('test.key', 'original')
-        
-        with config.temporary_override('test.key', 'temporary'):
-            self.assertEqual(config.get('test.key'), 'temporary')
-        
-        self.assertEqual(config.get('test.key'), 'original')
+```bash
+python -m unittest discover tests
 ```
 
-### Integration Tests
+Or run a specific test file:
 
-```python
-def test_environment_override():
-    os.environ['DATABASE_HOST'] = 'test-host'
-    config = ConfigManager()
-    assert config.get('database.host') == 'test-host'
+```bash
+python -m unittest tests/unit_test.py
+python -m unittest tests/integration_test.py
 ```
 
 ## Production Deployment
