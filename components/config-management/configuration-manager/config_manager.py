@@ -118,7 +118,16 @@ class ConfigEncryption:
         """Check if a value is encrypted"""
         return value.startswith('enc:')
 
+class ConfigSourcePlugin:
+    """Base class for custom config source plugins."""
+    def load(self) -> Dict[str, Any]:
+        raise NotImplementedError
 
+class ConfigHookPlugin:
+    """Base class for config change hook plugins."""
+    def on_config_change(self, event: str, old_config: Dict[str, Any], new_config: Dict[str, Any]):
+        pass
+    
 class RemoteConfigLoader:
     """
     Base class for remote configuration loaders.
@@ -172,12 +181,16 @@ class ConfigManager:
                  reload_interval: int = 30,
                  enable_encryption: bool = False,
                  encryption_key: Optional[bytes] = None,
-                 remote_loaders: Optional[List[RemoteConfigLoader]] = None):
+                 remote_loaders: Optional[List[RemoteConfigLoader]] = None,
+                 source_plugins: Optional[List[ConfigSourcePlugin]] = None,
+                 hook_plugins: Optional[List[ConfigHookPlugin]] = None):
         
         self.config_files = config_files or ["config.json", "config.yaml"]
         self.enable_hot_reload = enable_hot_reload
         self.reload_interval = reload_interval
         self.remote_loaders = remote_loaders or []
+        self.source_plugins = source_plugins or []
+        self.hook_plugins = hook_plugins or []
         
         # Thread safety
         self._lock = threading.RLock()
@@ -206,7 +219,15 @@ class ConfigManager:
         # Start hot reload if enabled
         if enable_hot_reload:
             self._start_hot_reload()
-    
+
+    def add_source_plugin(self, plugin: ConfigSourcePlugin):
+        """Register a custom config source plugin."""
+        self.source_plugins.append(plugin)
+
+    def add_hook_plugin(self, plugin: ConfigHookPlugin):
+        """Register a config change hook plugin."""
+        self.hook_plugins.append(plugin)
+
     def _metric_decorator(func):
         """Decorator to track configuration access metrics"""
         @wraps(func)
@@ -230,7 +251,7 @@ class ConfigManager:
             for config_file in self.config_files:
                 if os.path.exists(config_file):
                     self._load_config_file(config_file)
-            #Load from remote sources 
+            # Load from remote sources 
             for loader in self.remote_loaders:
                 try:
                     remote_config = loader.fetch()
@@ -238,7 +259,14 @@ class ConfigManager:
                     logger.info(f"Loaded remote config from {type(loader).__name__}")
                 except Exception as e:
                     logger.error(f"Remote config loader error: {e}")
-                    
+            # Load from source plugins
+            for plugin in self.source_plugins:
+                try:
+                    plugin_config = plugin.load()
+                    self._deep_merge(self._config, plugin_config)
+                    logger.info(f"Loaded config from plugin {type(plugin).__name__}")
+                except Exception as e:
+                    logger.error(f"Source plugin error: {e}")
             # Override with environment variables
             self._load_environment_overrides()
             
@@ -396,6 +424,12 @@ class ConfigManager:
                 listener("config_changed", old_config, new_config)
             except Exception as e:
                 logger.error(f"Error notifying config change listener: {e}")
+        # Notify hook plugins
+        for plugin in self.hook_plugins:
+            try:
+                plugin.on_config_change("config_changed", old_config, new_config)
+            except Exception as e:
+                logger.error(f"Error in hook plugin {type(plugin).__name__}: {e}")
     
     @_metric_decorator
     def get(self, key_path: str, default: Any = None) -> Any:
