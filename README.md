@@ -4,7 +4,17 @@ A comprehensive collection of production-ready backend system implementations sh
 
 ## Purpose
 
-This repository demonstrates practical implementations of fundamental backend engineering concepts through real-world applicable code. Each implementation focuses on:
+This repository demonstrates practical implementations of fundamental backend engineering concepts through real-world applicable code.
+
+**Toolkit Highlights:**
+
+- All systems are grouped by category for clarity and scalability.
+- Each system is self-contained, with its own implementation, documentation, scenario-based examples and system design documentation.
+- Core utilities and shared patterns are centralized in `core-utils/`.
+- The monorepo structure enables easy cross-system integration and code reuse.
+- Extensibility is built-in via plugin interfaces and modular design.
+
+> See individual system READMEs for detailed architecture and usage.
 
 ## Table of Contents
 
@@ -38,6 +48,8 @@ backend-infrastructure-toolkit/
 │   │   ├── system-name/
 │   │   │   ├── system_implementation.py
 │   │   │   ├── system README.md
+│   │   │   ├── system_design document.md
+│   │   │   ├── system_design diagram.png
 │   │   │   └── examples/
 │   │   │       ├── example_script.py
 │   │   │       ├── ...other scenario-based scripts
@@ -204,7 +216,7 @@ Each implementation follows:
 
 ## License
 
-MIT License – use freely in your backend projects/tasks!
+MIT License - see LICENSE file for details.
 
 ---
 
