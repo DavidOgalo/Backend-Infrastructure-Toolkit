@@ -541,9 +541,46 @@ Use `get_metrics()` to retrieve metrics for monitoring and alerting.
 
 ## Extending
 
-- Register custom validators for new config sections (see `validators` dict).
-- Integrate with your logging/monitoring stack as needed.
-- Add new config sources using the `RemoteConfigLoader` interface (e.g., HTTP, S3, etcd, Consul).
-- Extend with plugin/extension interfaces for custom sources and hooks.
+Register custom validators for new config sections (see `validators` dict).
+Integrate with your logging/monitoring stack as needed.
+Add new config sources using the `RemoteConfigLoader` interface (e.g., HTTP, S3, etcd, Consul).
+
+### Plugin/Extension Interfaces
+
+You can extend the configuration manager with custom source plugins and hook plugins:
+
+- **Source Plugins:** Inherit from `ConfigSourcePlugin`, implement `load()`, and register with `add_source_plugin()`.
+- **Hook Plugins:** Inherit from `ConfigHookPlugin`, implement `on_config_change()`, and register with `add_hook_plugin()`.
+
+#### Example Source Plugin
+
+```python
+from config_manager import ConfigSourcePlugin
+
+class VaultConfigPlugin(ConfigSourcePlugin):
+    def load(self):
+        # Fetch config from Vault (mocked)
+        return {"secrets": {"api_key": "vault-key"}}
+```
+
+#### Example Hook Plugin
+
+```python
+from config_manager import ConfigHookPlugin
+
+class SlackNotificationHook(ConfigHookPlugin):
+    def on_config_change(self, event, old_config, new_config):
+        print("Config changed! Notifying Slack...")
+```
+
+#### Registering Plugins
+
+```python
+config = ConfigManager()
+config.add_source_plugin(VaultConfigPlugin())
+config.add_hook_plugin(SlackNotificationHook())
+```
+
+See `examples/plugin_examples.py` for a full demo.
 
 ---

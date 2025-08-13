@@ -10,10 +10,13 @@ Key examples:
 - `encryption_demo.py`: Store and retrieve encrypted configuration values.
 - `validation_error_demo.py`: Handles and demonstrates schema validation errors.
 - `remote_config_usage.py`: Demonstrates loading configuration from a remote HTTP source using the pluggable loader interface.
+- `plugin_examples.py`: Demonstrates custom source and hook plugins for extensibility (Vault, Slack notification).
 
 See the scripts for more advanced and scenario-based usage.
 
 Remote config loading is now supported via extensible loader interfaces (see `remote_config_usage.py` for an HTTP example). You can implement your own loaders for S3, etcd, Consul, and more.
+
+Plugins allow you to add new config sources (e.g., Vault, Redis) and hooks (e.g., notifications, validation) without changing core code. See `plugin_examples.py` for usage.
 
 **How to run an example:**
 
@@ -33,12 +36,10 @@ PYTHONPATH=. python ./examples/basic_usage.py
 
 Replace `basic_usage.py` with any other example script as needed.
 
-To run the remote config loader example:
+To run the plugin example:
 
 ```pwsh
-$env:PYTHONPATH="."; python .\examples\remote_config_usage.py
+$env:PYTHONPATH="."; python .\examples\plugin_examples.py
 ```
-
-Replace with your own loader or source as needed.
 
 You can use or extend these scripts for your own use-cases.
