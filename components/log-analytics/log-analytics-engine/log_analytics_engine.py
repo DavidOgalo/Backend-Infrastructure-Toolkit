@@ -398,6 +398,31 @@ class BinarySearchTree:
 
 
 class LogAnalyticsEngine:
+    def export_metrics_prometheus(self) -> str:
+        """
+        Export metrics in Prometheus text exposition format.
+        """
+        stats = self.get_stats()
+        lines = [
+            "# HELP loganalytics_total_logs Total number of logs ingested",
+            "# TYPE loganalytics_total_logs counter",
+            f"loganalytics_total_logs {stats['total_logs']}",
+        ]
+        for level, count in stats.get("levels", {}).items():
+            lines.append(f'loganalytics_logs_level{{level="{level}"}} {count}')
+        for src, count in stats.get("sources", {}).items():
+            lines.append(f'loganalytics_logs_source{{source="{src}"}} {count}')
+        for tag, count in stats.get("tags", {}).items():
+            lines.append(f'loganalytics_logs_tag{{tag="{tag}"}} {count}')
+        lines.append(f"loganalytics_keywords_total {stats.get('keywords', 0)}")
+        return "\n".join(lines)
+
+    def export_metrics_json(self) -> Dict[str, Any]:
+        """
+        Export metrics as a JSON snapshot for dashboard integration.
+        """
+        return self.get_stats()
+
     def ingest_logs_from_file(
         self, file_path: str, file_type: str = "jsonl"
     ) -> Dict[str, Any]:
