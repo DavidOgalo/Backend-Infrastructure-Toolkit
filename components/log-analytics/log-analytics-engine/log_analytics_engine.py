@@ -14,31 +14,26 @@ Key Features:
 - Thread-safe operations with high throughput
 """
 
+import logging
 import re
-import json
 import threading
 import time
-import logging
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Callable, Generator, Tuple
-from dataclasses import dataclass, field, asdict
-from collections import defaultdict, deque
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor
-import heapq
-from abc import ABC, abstractmethod
-import asyncio
-from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
+
 class LogLevel(Enum):
     """Standard log levels"""
+
     TRACE = 0
     DEBUG = 10
     INFO = 20
@@ -46,12 +41,15 @@ class LogLevel(Enum):
     ERROR = 40
     FATAL = 50
 
+
 class AlertSeverity(Enum):
     """Alert severity levels"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
 
 @dataclass
 class LogEntry:
@@ -66,11 +64,12 @@ class LogEntry:
         if not isinstance(other, LogEntry):
             return False
         return (
-            self.timestamp == other.timestamp and
-            self.level == other.level and
-            self.message == other.message and
-            self.source == other.source
+            self.timestamp == other.timestamp
+            and self.level == other.level
+            and self.message == other.message
+            and self.source == other.source
         )
+
     """Enhanced log entry with comprehensive metadata"""
     timestamp: str
     level: str
@@ -82,12 +81,12 @@ class LogEntry:
     tags: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     parsed_time: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Initialize computed fields"""
         if self.parsed_time is None:
             self.parsed_time = self._parse_timestamp()
-    
+
     def _parse_timestamp(self) -> datetime:
         """Parse timestamp string to datetime object"""
         try:
@@ -97,65 +96,76 @@ class LogEntry:
                 "%Y-%m-%dT%H:%M:%SZ",
                 "%Y-%m-%d %H:%M:%S.%f",
                 "%Y-%m-%d %H:%M:%S",
-                "%d/%b/%Y:%H:%M:%S %z"  # Common log format
+                "%d/%b/%Y:%H:%M:%S %z",  # Common log format
             ]
-            
+
             for fmt in timestamp_formats:
                 try:
-                    if self.timestamp.endswith('Z'):
-                        return datetime.strptime(self.timestamp, fmt).replace(tzinfo=timezone.utc)
+                    if self.timestamp.endswith("Z"):
+                        return datetime.strptime(self.timestamp, fmt).replace(
+                            tzinfo=timezone.utc
+                        )
                     else:
                         return datetime.strptime(self.timestamp, fmt)
                 except ValueError:
                     continue
-            
+
             # Fallback to current time if parsing fails
             logger.warning(f"Failed to parse timestamp: {self.timestamp}")
             return datetime.now(timezone.utc)
-            
+
         except Exception as e:
             logger.error(f"Error parsing timestamp {self.timestamp}: {e}")
             return datetime.now(timezone.utc)
-    
+
     @property
     def severity_score(self) -> int:
         """Get numeric severity score for the log level"""
         level_scores = {
-            'TRACE': 0, 'DEBUG': 10, 'INFO': 20,
-            'WARN': 30, 'WARNING': 30, 'ERROR': 40,
-            'FATAL': 50, 'CRITICAL': 50
+            "TRACE": 0,
+            "DEBUG": 10,
+            "INFO": 20,
+            "WARN": 30,
+            "WARNING": 30,
+            "ERROR": 40,
+            "FATAL": 50,
+            "CRITICAL": 50,
         }
         return level_scores.get(self.level.upper(), 20)
-    
+
     @property
     def age_seconds(self) -> float:
         """Get age of log entry in seconds"""
         if self.parsed_time:
             return (datetime.now(timezone.utc) - self.parsed_time).total_seconds()
         return 0.0
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation"""
         return asdict(self)
-    
+
     def matches_filter(self, filters: Dict[str, Any]) -> bool:
         """Check if log entry matches given filters"""
         for key, value in filters.items():
-            if key == 'level' and self.level != value:
+            if key == "level" and self.level != value:
                 return False
-            elif key == 'source' and self.source != value:
+            elif key == "source" and self.source != value:
                 return False
-            elif key == 'min_severity' and self.severity_score < value:
+            elif key == "min_severity" and self.severity_score < value:
                 return False
-            elif key == 'tags' and not any(tag in self.tags for tag in value):
+            elif key == "tags" and not any(tag in self.tags for tag in value):
                 return False
-            elif key == 'keywords' and not any(keyword.lower() in self.message.lower() for keyword in value):
+            elif key == "keywords" and not any(
+                keyword.lower() in self.message.lower() for keyword in value
+            ):
                 return False
         return True
+
 
 @dataclass
 class AlertRule:
     """Configuration for log-based alerts"""
+
     name: str
     description: str
     conditions: Dict[str, Any]
@@ -165,24 +175,26 @@ class AlertRule:
     cooldown: int = 600  # 10 minutes
     enabled: bool = True
     last_triggered: Optional[float] = None
-    
+
     def should_trigger(self, count: int, current_time: float) -> bool:
         """Check if alert should trigger"""
         if not self.enabled:
             return False
-        
+
         if count < self.threshold:
             return False
-        
+
         # Check cooldown
         if self.last_triggered and (current_time - self.last_triggered) < self.cooldown:
             return False
-        
+
         return True
+
 
 @dataclass
 class Alert:
     """Alert instance"""
+
     rule_name: str
     message: str
     severity: AlertSeverity
@@ -191,9 +203,10 @@ class Alert:
     sample_logs: List[LogEntry]
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+
 class BinarySearchTree:
     """Custom BST implementation for time-based indexing"""
-    
+
     class Node:
         def __init__(self, key: str, value: Any):
             self.key = key
@@ -201,50 +214,52 @@ class BinarySearchTree:
             self.left = None
             self.right = None
             self.height = 1
-    
+
     def __init__(self):
         self.root = None
-    
-    def _height(self, node: Optional['BinarySearchTree.Node']) -> int:
+
+    def _height(self, node: Optional["BinarySearchTree.Node"]) -> int:
         """Get height of node"""
         return node.height if node else 0
-    
-    def _balance(self, node: Optional['BinarySearchTree.Node']) -> int:
+
+    def _balance(self, node: Optional["BinarySearchTree.Node"]) -> int:
         """Get balance factor of node"""
         return self._height(node.left) - self._height(node.right) if node else 0
-    
-    def _rotate_right(self, y: 'BinarySearchTree.Node') -> 'BinarySearchTree.Node':
+
+    def _rotate_right(self, y: "BinarySearchTree.Node") -> "BinarySearchTree.Node":
         """Right rotation for AVL balancing"""
         x = y.left
         T2 = x.right
-        
+
         x.right = y
         y.left = T2
-        
+
         y.height = 1 + max(self._height(y.left), self._height(y.right))
         x.height = 1 + max(self._height(x.left), self._height(x.right))
-        
+
         return x
-    
-    def _rotate_left(self, x: 'BinarySearchTree.Node') -> 'BinarySearchTree.Node':
+
+    def _rotate_left(self, x: "BinarySearchTree.Node") -> "BinarySearchTree.Node":
         """Left rotation for AVL balancing"""
         y = x.right
         T2 = y.left
-        
+
         y.left = x
         x.right = T2
-        
+
         x.height = 1 + max(self._height(x.left), self._height(x.right))
         y.height = 1 + max(self._height(y.left), self._height(y.right))
-        
+
         return y
-    
-    def _insert(self, node: Optional['BinarySearchTree.Node'], key: str, value: Any) -> 'BinarySearchTree.Node':
+
+    def _insert(
+        self, node: Optional["BinarySearchTree.Node"], key: str, value: Any
+    ) -> "BinarySearchTree.Node":
         """Insert node with AVL balancing"""
         # Standard BST insertion
         if not node:
             return self.Node(key, value)
-        
+
         if key < node.key:
             node.left = self._insert(node.left, key, value)
         elif key > node.key:
@@ -256,33 +271,33 @@ class BinarySearchTree:
             else:
                 node.value = [node.value, value]
             return node
-        
+
         # Update height
         node.height = 1 + max(self._height(node.left), self._height(node.right))
-        
+
         # Get balance factor
         balance = self._balance(node)
-        
+
         # Left Left Case
         if balance > 1 and key < node.left.key:
             return self._rotate_right(node)
-        
+
         # Right Right Case
         if balance < -1 and key > node.right.key:
             return self._rotate_left(node)
-        
+
         # Left Right Case
         if balance > 1 and key > node.left.key:
             node.left = self._rotate_left(node.left)
             return self._rotate_right(node)
-        
+
         # Right Left Case
         if balance < -1 and key < node.right.key:
             node.right = self._rotate_right(node.right)
             return self._rotate_left(node)
-        
+
         return node
-    
+
     def insert(self, key: str, value: Any):
         """
         Insert a key-value pair into the BST, maintaining AVL balance.
@@ -293,7 +308,9 @@ class BinarySearchTree:
         """
         self.root = self._insert(self.root, key, value)
 
-    def _search(self, node: Optional['BinarySearchTree.Node'], key: str) -> Optional[Any]:
+    def _search(
+        self, node: Optional["BinarySearchTree.Node"], key: str
+    ) -> Optional[Any]:
         """
         Search for a key in the BST.
         Returns the value if found, else None.
@@ -317,7 +334,13 @@ class BinarySearchTree:
         """
         return self._search(self.root, key)
 
-    def _range_query(self, node: Optional['BinarySearchTree.Node'], start: str, end: str, result: List[Any]):
+    def _range_query(
+        self,
+        node: Optional["BinarySearchTree.Node"],
+        start: str,
+        end: str,
+        result: List[Any],
+    ):
         """
         Helper for range query: collect all values with keys in [start, end].
         """
@@ -346,7 +369,9 @@ class BinarySearchTree:
         self._range_query(self.root, start, end, result)
         return result
 
-    def _inorder(self, node: Optional['BinarySearchTree.Node'], result: List[Tuple[str, Any]]):
+    def _inorder(
+        self, node: Optional["BinarySearchTree.Node"], result: List[Tuple[str, Any]]
+    ):
         """
         In-order traversal of the BST.
         """
@@ -365,15 +390,18 @@ class BinarySearchTree:
         result: List[Tuple[str, Any]] = []
         self._inorder(self.root, result)
         return result
-    
+
+
 # =============================
 # Log Analytics Engine
 # =============================
+
 
 class LogAnalyticsEngine:
     """
     Main log analytics engine supporting real-time ingestion, multi-indexing, querying, and alerting.
     """
+
     def __init__(self):
         # Time index (BST by timestamp string)
         self.time_index = BinarySearchTree()
@@ -383,19 +411,35 @@ class LogAnalyticsEngine:
         self.source_index = defaultdict(list)
         # Keyword inverted index: keyword -> set of LogEntry
         self.keyword_index = defaultdict(set)
+        # Tags index: tag -> set of LogEntry
+        self.tags_index = defaultdict(set)
         # All logs (for batch/iteration)
         self.all_logs = []
         # Alert rules and triggered alerts
-        self.alert_rules: List[AlertRule] = []
-        self.triggered_alerts: List[Alert] = []
+        self.alert_rules = []  # type: List[AlertRule]
+        self.triggered_alerts = []  # type: List[Alert]
         # Thread safety
         self._lock = threading.RLock()
+        # Pre-ingest enrichment/filter hooks
+        self.pre_ingest_hooks = []  # type: List[callable]
+
+    def add_pre_ingest_hook(self, hook_fn):
+        """
+        Register a pre-ingest enrichment/filter hook.
+        Each hook_fn should accept a LogEntry and return a LogEntry (or None to filter out).
+        """
+        self.pre_ingest_hooks.append(hook_fn)
 
     def ingest_log(self, log: LogEntry):
         """
         Ingest a log entry, update all indexes, and check alerts.
         """
         with self._lock:
+            # Apply pre-ingest hooks
+            for hook in self.pre_ingest_hooks:
+                log = hook(log)
+                if log is None:
+                    return  # Filtered out
             self.all_logs.append(log)
             # Index by time (use ISO timestamp string as key)
             self.time_index.insert(log.timestamp, log)
@@ -405,8 +449,11 @@ class LogAnalyticsEngine:
             if log.source:
                 self.source_index[log.source].append(log)
             # Index by keywords (split message into words)
-            for word in set(re.findall(r'\w+', log.message.lower())):
+            for word in set(re.findall(r"\w+", log.message.lower())):
                 self.keyword_index[word].add(log)
+            # Index by tags
+            for tag in log.tags:
+                self.tags_index[tag].add(log)
             # Check alert rules
             self._check_alerts(log)
 
@@ -425,27 +472,32 @@ class LogAnalyticsEngine:
         with self._lock:
             # Time range filter (if present)
             logs = self.all_logs
-            if 'start_time' in filters and 'end_time' in filters:
-                start = filters['start_time']
-                end = filters['end_time']
+            if "start_time" in filters and "end_time" in filters:
+                start = filters["start_time"]
+                end = filters["end_time"]
                 logs = self.time_index.range_query(start, end)
             # Level filter
-            if 'level' in filters:
-                logs = [log for log in logs if log.level.upper() == filters['level'].upper()]
+            if "level" in filters:
+                logs = [
+                    log for log in logs if log.level.upper() == filters["level"].upper()
+                ]
             # Source filter
-            if 'source' in filters:
-                logs = [log for log in logs if log.source == filters['source']]
+            if "source" in filters:
+                logs = [log for log in logs if log.source == filters["source"]]
             # Keyword filter
-            if 'keyword' in filters:
-                kw = filters['keyword'].lower()
+            if "keyword" in filters:
+                kw = filters["keyword"].lower()
                 logs = [log for log in logs if kw in log.message.lower()]
-            # Tags filter
-            if 'tags' in filters:
-                tags = set(filters['tags'])
-                logs = [log for log in logs if tags.intersection(set(log.tags))]
+            # Tags filter (use tags index for fast lookup)
+            if "tags" in filters:
+                tags = set(filters["tags"])
+                tag_logs = set()
+                for tag in tags:
+                    tag_logs.update(self.tags_index.get(tag, set()))
+                logs = [log for log in logs if log in tag_logs]
             # Min severity filter
-            if 'min_severity' in filters:
-                min_score = filters['min_severity']
+            if "min_severity" in filters:
+                min_score = filters["min_severity"]
                 logs = [log for log in logs if log.severity_score >= min_score]
             return logs
 
@@ -465,13 +517,16 @@ class LogAnalyticsEngine:
             window_start = now - rule.time_window
             count = 0
             sample_logs = []
-            for l in reversed(self.all_logs):
-                if l.parsed_time and l.parsed_time.timestamp() < window_start:
+            for log_entry in reversed(self.all_logs):
+                if (
+                    log_entry.parsed_time
+                    and log_entry.parsed_time.timestamp() < window_start
+                ):
                     break
-                if l.matches_filter(rule.conditions):
+                if log_entry.matches_filter(rule.conditions):
                     count += 1
                     if len(sample_logs) < 5:
-                        sample_logs.append(l)
+                        sample_logs.append(log_entry)
             if rule.should_trigger(count, now):
                 alert = Alert(
                     rule_name=rule.name,
@@ -493,13 +548,11 @@ class LogAnalyticsEngine:
         """Return summary statistics about ingested logs."""
         with self._lock:
             return {
-                'total_logs': len(self.all_logs),
-                'levels': {level: len(logs) for level, logs in self.level_index.items()},
-                'sources': {src: len(logs) for src, logs in self.source_index.items()},
-                'keywords': len(self.keyword_index),
+                "total_logs": len(self.all_logs),
+                "levels": {
+                    level: len(logs) for level, logs in self.level_index.items()
+                },
+                "sources": {src: len(logs) for src, logs in self.source_index.items()},
+                "keywords": len(self.keyword_index),
+                "tags": {tag: len(logs) for tag, logs in self.tags_index.items()},
             }
-
-"""
-See the examples/ directory for usage demos. Always run the usage scripts with the parent directory in PYTHONPATH as;
-$env:PYTHONPATH="."; python .\examples\example.py 
-"""
