@@ -2,10 +2,9 @@
 
 A production-ready, high-performance log analytics engine for real-time log ingestion, multi-index querying, alerting, and observability. Designed for modern backend systems, this engine provides advanced log processing, flexible querying, and robust alerting capabilities.
 
----
-
 ## Table of Contents
 
+- [System Design & Architecture](#system-design--architecture)
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
@@ -18,6 +17,12 @@ A production-ready, high-performance log analytics engine for real-time log inge
 
 ---
 
+## System Design & Architecture
+
+For a comprehensive overview of the system architecture, design rationale, integration points and deployment reference see [System Design Document](./system_design.md).
+
+---
+
 ## Overview
 
 The **Log Analytics Engine** is a Python-based system for ingesting, indexing, querying, and analyzing logs in real time. It supports multi-indexing (by time, level, source, and keyword), advanced filtering, and a flexible alerting system. The engine is thread-safe, highly extensible, and suitable for both real-time and batch log analytics in modern backend environments.
@@ -26,22 +31,29 @@ The **Log Analytics Engine** is a Python-based system for ingesting, indexing, q
 
 ## Features
 
-- **Real-time log ingestion** with streaming and batch support
-- **Multi-index architecture**: time (AVL/BST), level, source, keyword (inverted index)
-- **Advanced query capabilities**: filter by time range, level, source, tags, keywords, severity, etc.
-- **Configurable alerting system**: define rules with thresholds, time windows, and cooldowns
-- **Dashboard metrics**: summary stats for observability
+- **Real-time log ingestion** with streaming, batch, and file support
+- **Multi-index architecture**: time (AVL/BST), level, source, keyword (inverted index), tags
+- **Advanced query capabilities**: filter by time range, level, source, tags, keywords, severity, with sorting and pagination
+- **Aggregation and analytics**: group by, histogram, top-N queries
+- **Configurable alerting system**: define rules with thresholds, time windows, cooldowns, and external notification hooks
+- **Processing pipeline**: pre-ingest enrichment/filter hooks for custom log processing
+- **Batch file processing**: ingest logs from JSONL or text files with performance tracking
+- **Dashboard integration**: export metrics in Prometheus and JSON formats
+- **Alert persistence**: save and reload triggered alerts to/from file
 - **Thread-safe**: supports concurrent ingestion and querying
-- **Extensible**: easy to add new indexes, alert types, or integrations
+- **Extensible**: easy to add new indexes, alert types, enrichment, or integrations
 
 ---
 
 ## Architecture
 
-- **LogEntry**: Rich log object with metadata, tags, and severity scoring
+- **LogEntry**: Rich log object with metadata, tags, severity scoring, and extensible fields
 - **BinarySearchTree**: Custom AVL tree for efficient time-based queries
-- **Indexes**: Dictionaries for level, source, and keyword (inverted index)
-- **Alerting**: AlertRule and Alert classes for rule-based notifications
+- **Indexes**: Dictionaries for level, source, keyword (inverted index), and tags
+- **Alerting**: AlertRule and Alert classes for rule-based notifications and external hooks
+- **Processing Pipeline**: Pre-ingest hooks for enrichment and filtering
+- **Batch/File Processing**: Efficient ingestion from files with performance metrics
+- **Dashboard Integration**: Metrics export for Prometheus/Grafana and JSON dashboards
 - **Thread Safety**: Uses `threading.RLock` for safe concurrent access
 
 ---
@@ -111,17 +123,18 @@ log = LogEntry(
     tags=["db", "critical"]
 )
 engine.ingest_log(log)
-```
 
-Batch ingestion:
-
-```python
+# Batch ingestion
 engine.ingest_logs([log1, log2, ...])
+
+# File ingestion (JSONL or text)
+metrics = engine.ingest_logs_from_file("logs.jsonl", file_type="jsonl")
+print(metrics)  # {'file': ..., 'count': ..., 'duration_sec': ..., 'logs_per_sec': ...}
 ```
 
 ### Querying Logs
 
-Query by time range and level:
+#### Query by time range and level
 
 ```python
 results = engine.query_logs({
@@ -131,23 +144,37 @@ results = engine.query_logs({
 })
 ```
 
-Query by keyword:
+#### Query by keyword
 
 ```python
 results = engine.query_logs({"keyword": "cache"})
 ```
 
-Query by tags, source, or min severity:
+#### Query by tags, source, or min severity
 
 ```python
 results = engine.query_logs({"tags": ["api"], "min_severity": 30})
 ```
 
-### Alerting
-
-Define and add an alert rule:
+#### Advanced: sorting and pagination
 
 ```python
+results = engine.query_logs(
+    {"level": "ERROR"}, sort_by="timestamp", sort_desc=True, page=0, page_size=50
+)
+```
+
+#### Aggregation: group by, histogram, top-N
+
+```python
+agg = engine.aggregate_logs(results, group_by="source", histogram="level", top_n={"tags": 5})
+print(agg)
+```
+
+### Alerting & Notification
+
+```python
+# Define and add an alert rule
 from log_analytics_engine import AlertRule, AlertSeverity
 
 rule = AlertRule(
@@ -160,21 +187,36 @@ rule = AlertRule(
     cooldown=60
 )
 engine.add_alert_rule(rule)
-```
 
-Alerts are triggered automatically during ingestion. Retrieve them:
+# Register external alert notification hook (e.g., send to webhook/email)
+def notify(alert):
+    print(f"External notification: {alert.message}")
+engine.add_alert_notification_hook(notify)
 
-```python
+# Alerts are triggered automatically during ingestion. Retrieve them
 alerts = engine.get_alerts()
 for alert in alerts:
     print(alert)
+
+# Persist and reload alerts
+engine.persist_alerts_to_file("alerts.jsonl")
+engine.load_alerts_from_file("alerts.jsonl")
 ```
 
-### Metrics & Stats
+### Metrics & Dashboard Integration
 
 ```python
+# Get summary stats
 stats = engine.get_stats()
 print(stats)
+
+# Export metrics for Prometheus
+prom_metrics = engine.export_metrics_prometheus()
+print(prom_metrics)
+
+# Export metrics as JSON for dashboards
+json_metrics = engine.export_metrics_json()
+print(json_metrics)
 ```
 
 ---
@@ -197,10 +239,18 @@ print(stats)
 
 - `ingest_log(log: LogEntry)`: Ingest a single log
 - `ingest_logs(logs: List[LogEntry])`: Ingest multiple logs
-- `query_logs(filters: Dict) -> List[LogEntry]`: Query logs by filters
+- `ingest_logs_from_file(file_path, file_type)`: Ingest logs from file (JSONL/text)
+- `add_pre_ingest_hook(hook_fn)`: Register enrichment/filter hook
+- `query_logs(filters, sort_by, sort_desc, page, page_size)`: Query logs with filters, sorting, pagination
+- `aggregate_logs(logs, group_by, histogram, top_n)`: Aggregate logs
 - `add_alert_rule(rule: AlertRule)`: Add an alert rule
+- `add_alert_notification_hook(hook_fn)`: Register external alert notification hook
 - `get_alerts() -> List[Alert]`: Get triggered alerts
+- `persist_alerts_to_file(file_path)`: Save alerts to file
+- `load_alerts_from_file(file_path)`: Load alerts from file
 - `get_stats() -> Dict`: Get summary stats
+- `export_metrics_prometheus() -> str`: Export metrics for Prometheus
+- `export_metrics_json() -> Dict`: Export metrics for dashboards
 
 ### AlertRule
 
@@ -216,15 +266,27 @@ print(stats)
 ## Extending the Engine
 
 - Add new indexes (e.g., user_id, request_id) by updating the `LogAnalyticsEngine` class
-- Integrate with external alerting/notification systems by extending the alerting logic
+- Integrate with external alerting/notification systems using notification hooks
 - Add support for log persistence (e.g., to disk or database)
+- Implement custom enrichment/filter hooks for log processing
+- Build custom dashboards using metrics export APIs
 - Implement custom query operators or aggregations as needed
 
 ## Testing
 
-- The demo in `log_analytics_engine.py` provides a basic test scenario
-- For unit tests, use `pytest` or `unittest` and mock log entries/alert rules
-- Ensure thread safety by testing concurrent ingestion and queries
+All tests are implemented in the `tests/` directory and follow a modular structure:
+
+- **Unit tests** (`tests/test_unit.py`): Cover core engine logic, log ingestion, querying, and alert rule triggering.
+- **Integration tests** (`tests/test_integration.py`): Validate batch file ingestion, alert notification hooks, and end-to-end scenarios.
+- **Performance tests** (`tests/test_performance.py`): Measure ingestion throughput and engine scalability.
+
+Run all tests using `pytest` or `unittest`:
+
+```bash
+pytest tests/
+# or
+python -m unittest discover tests
+```
 
 ## Best Practices
 
