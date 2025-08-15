@@ -398,6 +398,56 @@ class BinarySearchTree:
 
 
 class LogAnalyticsEngine:
+    def aggregate_logs(
+        self,
+        logs: List[LogEntry],
+        group_by: Optional[str] = None,
+        histogram: Optional[str] = None,
+        top_n: Optional[Dict[str, int]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Aggregate logs with group by, histogram, and top-N features.
+        group_by: field to group by (e.g., 'level', 'source', 'tag')
+        histogram: field to build histogram (e.g., 'level', 'source', 'tags')
+        top_n: dict of {field: n} to get top-N values (e.g., {'source': 5})
+        Returns a dict with aggregation results.
+        """
+        from collections import Counter, defaultdict
+
+        result = {}
+        if group_by:
+            groups = defaultdict(list)
+            for log in logs:
+                key = getattr(log, group_by, None)
+                if isinstance(key, list):
+                    for k in key:
+                        groups[k].append(log)
+                elif key is not None:
+                    groups[key].append(log)
+            result["group_by"] = {k: len(v) for k, v in groups.items()}
+        if histogram:
+            hist = Counter()
+            for log in logs:
+                key = getattr(log, histogram, None)
+                if isinstance(key, list):
+                    for k in key:
+                        hist[k] += 1
+                elif key is not None:
+                    hist[key] += 1
+            result["histogram"] = dict(hist)
+        if top_n:
+            for field, n in top_n.items():
+                counter = Counter()
+                for log in logs:
+                    key = getattr(log, field, None)
+                    if isinstance(key, list):
+                        for k in key:
+                            counter[k] += 1
+                    elif key is not None:
+                        counter[key] += 1
+                result[f"top_{n}_{field}"] = counter.most_common(n)
+        return result
+
     def export_metrics_prometheus(self) -> str:
         """
         Export metrics in Prometheus text exposition format.
@@ -541,9 +591,17 @@ class LogAnalyticsEngine:
         for log in logs:
             self.ingest_log(log)
 
-    def query_logs(self, filters: Dict[str, Any]) -> List[LogEntry]:
+    def query_logs(
+        self,
+        filters: Dict[str, Any],
+        sort_by: Optional[str] = None,
+        sort_desc: bool = False,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+    ) -> List[LogEntry]:
         """
         Query logs using filters: time range, level, source, keywords, tags, min_severity, etc.
+        Supports sorting and pagination.
         Returns a list of matching LogEntry objects.
         """
         with self._lock:
@@ -576,6 +634,16 @@ class LogAnalyticsEngine:
             if "min_severity" in filters:
                 min_score = filters["min_severity"]
                 logs = [log for log in logs if log.severity_score >= min_score]
+            # Sorting
+            if sort_by:
+                logs = sorted(
+                    logs, key=lambda log: getattr(log, sort_by, None), reverse=sort_desc
+                )
+            # Pagination
+            if page is not None and page_size is not None:
+                start_idx = page * page_size
+                end_idx = start_idx + page_size
+                logs = logs[start_idx:end_idx]
             return logs
 
     def add_alert_rule(self, rule: AlertRule):
