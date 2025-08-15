@@ -398,6 +398,53 @@ class BinarySearchTree:
 
 
 class LogAnalyticsEngine:
+    def add_alert_notification_hook(self, hook_fn):
+        """
+        Register an external alert notification hook.
+        Each hook_fn should accept an Alert object.
+        """
+        if not hasattr(self, "_alert_notification_hooks"):
+            self._alert_notification_hooks = []
+        self._alert_notification_hooks.append(hook_fn)
+
+    def _notify_alert(self, alert):
+        """
+        Call all registered alert notification hooks with the alert.
+        """
+        if hasattr(self, "_alert_notification_hooks"):
+            for hook in self._alert_notification_hooks:
+                try:
+                    hook(alert)
+                except Exception as e:
+                    logger.error(f"Alert notification hook failed: {e}")
+
+    def persist_alerts_to_file(self, file_path: str):
+        """
+        Persist triggered alerts to a file (JSON lines).
+        """
+        import json
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            for alert in self.triggered_alerts:
+                f.write(json.dumps(alert.__dict__, default=str) + "\n")
+
+    def load_alerts_from_file(self, file_path: str):
+        """
+        Load persisted alerts from a file (JSON lines).
+        """
+        import json
+
+        alerts = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    data = json.loads(line)
+                    alert = Alert(**data)
+                    alerts.append(alert)
+                except Exception as e:
+                    logger.warning(f"Failed to load alert: {e}")
+        self.triggered_alerts = alerts
+
     def aggregate_logs(
         self,
         logs: List[LogEntry],
@@ -684,6 +731,7 @@ class LogAnalyticsEngine:
                 self.triggered_alerts.append(alert)
                 rule.last_triggered = now
                 logger.warning(f"ALERT: {alert.message}")
+                self._notify_alert(alert)
 
     def get_alerts(self) -> List[Alert]:
         """Return all triggered alerts."""
