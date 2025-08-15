@@ -398,6 +398,58 @@ class BinarySearchTree:
 
 
 class LogAnalyticsEngine:
+    def ingest_logs_from_file(
+        self, file_path: str, file_type: str = "jsonl"
+    ) -> Dict[str, Any]:
+        """
+        Ingest logs from a file (JSON lines or plain text).
+        Returns performance metrics: count, duration, logs/sec.
+        file_type: 'jsonl' (default) or 'text'.
+        """
+        import json
+
+        start_time = time.time()
+        count = 0
+        logs = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            if file_type == "jsonl":
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        log = LogEntry(**data)
+                        logs.append(log)
+                        count += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to parse log line: {e}")
+            elif file_type == "text":
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    # Simple text: treat line as message, use current time
+                    log = LogEntry(
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        level="INFO",
+                        message=line,
+                    )
+                    logs.append(log)
+                    count += 1
+            else:
+                raise ValueError(f"Unsupported file_type: {file_type}")
+        self.ingest_logs(logs)
+        duration = time.time() - start_time
+        throughput = count / duration if duration > 0 else count
+        return {
+            "file": file_path,
+            "type": file_type,
+            "count": count,
+            "duration_sec": duration,
+            "logs_per_sec": throughput,
+        }
+
     """
     Main log analytics engine supporting real-time ingestion, multi-indexing, querying, and alerting.
     """
