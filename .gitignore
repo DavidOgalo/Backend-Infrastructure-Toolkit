@@ -3,3 +3,4 @@ test.py
 __pycache__/
 *.pyc
 .pre-commit-config.yaml
+.ruff_cache/
