@@ -5,7 +5,7 @@ A production-ready, thread-safe configuration manager with advanced features for
 
 ## System Design & Architecture
 
-For a comprehensive overview of the system architecture, design rationale, and integration points, see [system_design.md](./system_design.md).
+For a comprehensive overview of the system architecture, design rationale, and integration points, see [System Design Document](./system_design.md).
 
 ## Overview
 
