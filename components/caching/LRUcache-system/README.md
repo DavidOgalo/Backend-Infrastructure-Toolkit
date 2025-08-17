@@ -411,4 +411,4 @@ python -m unittest tests/performance_test.py
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - See the [LICENSE](../../../LICENSE) file for details.
