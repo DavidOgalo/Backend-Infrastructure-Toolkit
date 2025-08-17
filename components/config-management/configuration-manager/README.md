@@ -1,15 +1,31 @@
-
 # Configuration Management System
 
 A production-ready, thread-safe configuration manager with advanced features for modern backend services.
 
-## System Design & Architecture
+## Table of Contents
 
-For a comprehensive overview of the system architecture, design rationale, and integration points, see [System Design Document](./system_design.md).
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Configuration Format](#configuration-format)
+- [API Reference](#api-reference)
+- [Security & Best Practices](#security--best-practices)
+- [Monitoring & Metrics](#monitoring--metrics)
+- [Hot Reloading](#hot-reloading)
+- [Extending](#extending)
+- [Testing](#testing)
+- [Production Deployment](#production-deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
 This configuration management system provides a robust solution for handling application settings with support for multiple sources, hot reloading, validation, and security features essential for production environments.
+
+For a comprehensive overview of the system architecture, design rationale, and integration points, see [System Design Document](./system_design.md).
 
 ## Key Features
 
@@ -53,45 +69,19 @@ ConfigManager
 └── Plugin/Extension Interfaces
 ```
 
-## Use Cases
+## Installation
 
-### 1. **Database Configuration**
-
-```python
-config = ConfigManager(["config.json"])
-db_config = config.get_database_config()
-# Returns: {'host': 'localhost', 'port': 5432, 'database': 'myapp', ...}
-```
-
-### 2. **API Settings**
-
-```python
-api_config = config.get_api_config()
-# Returns: {'key': 'xxx', 'rate_limit': 1000, 'timeout': 30.0, ...}
-```
-
-### 3. **Environment Overrides**
+Add the component to your project (assuming you have the repo cloned):
 
 ```bash
-export DATABASE_HOST=prod-db.example.com
-export API_RATE_LIMIT=5000
+cd components/config-management/configuration-manager
+pip install -r requirements.txt  
 ```
 
-### 4. **Hot Reloading**
+**Dependencies:**
 
-```python
-def on_config_change(event, old_config, new_config):
-    logger.info("Configuration updated")
-
-config.add_change_listener(on_config_change)
-```
-
-### 5. **Encryption for Secrets**
-
-```python
-config.set('database.password', 'secret123', encrypt=True)
-password = config.get('database.password')  # Automatically decrypted
-```
+- Python 3.7+
+- `pyyaml`, `cryptography`
 
 ## Getting Started
 
@@ -130,6 +120,7 @@ with config.temporary_override('database.host', 'test-db'):
     # Configuration temporarily changed
     test_connection()
 # Configuration restored
+```
 
 ### Remote Configuration Loader Example
 
@@ -143,6 +134,118 @@ config = ConfigManager(remote_loaders=[http_loader])
 # Access remote config values
 api_key = config.get('api.key')
 ```
+
+#### Minimal Quick-Start (copy-paste into your own script)
+
+```python
+from config_manager import ConfigManager
+
+config = ConfigManager(
+    config_files=["config.json", "config.yaml"],
+    enable_hot_reload=True,
+    enable_encryption=True
+)
+```
+
+## Usage
+
+All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here is a key example:
+
+- `examples/basic_usage.py`: Initialize the configuration manager, access configs, view metrics, and use temporary overrides.
+
+See the `examples/` directory and `examples/README.md` for more advanced and scenario-based usage scripts.
+
+**How to run an example:**
+
+> **Important:** Always run the example scripts with the parent directory in your `PYTHONPATH` so that imports work correctly.
+
+On Windows PowerShell:
+
+```pwsh
+$env:PYTHONPATH="."; python .\examples\basic_usage.py
+```
+
+On Linux/macOS/bash:
+
+```bash
+PYTHONPATH=. python ./examples/basic_usage.py
+```
+
+Replace `basic_usage.py` with any other example script as needed.
+
+These scripts demonstrate real-world backend scenarios, including config loading, validation, encryption, and observability. You can use or extend them for your own use-cases.
+
+### Use Cases
+
+1. **Database Configuration**
+
+   ```python
+   config = ConfigManager(["config.json"])
+   db_config = config.get_database_config()
+   # Returns: {'host': 'localhost', 'port': 5432, 'database': 'myapp', ...}
+   ```
+
+2. **API Settings**
+
+   ```python
+   api_config = config.get_api_config()
+   # Returns: {'key': 'xxx', 'rate_limit': 1000, 'timeout': 30.0, ...}
+   ```
+
+3. **Environment Overrides**
+
+   ```bash
+   export DATABASE_HOST=prod-db.example.com
+   export API_RATE_LIMIT=5000
+   ```
+
+   Set environment variables to override config values:
+
+   ```bash
+   export DATABASE_HOST=prod-db.example.com
+   export API_KEY=prod-api-key
+   ```
+
+4. **Hot Reloading**
+
+   ```python
+   def on_config_change(event, old_config, new_config):
+       logger.info("Configuration updated")
+
+   config.add_change_listener(on_config_change)
+   ```
+
+5. **Encryption for Secrets**
+
+   ```python
+   config.set('database.password', 'secret123', encrypt=True)
+   password = config.get('database.password')  # Automatically decrypted
+   ```
+
+### Batch Operations Example
+
+You can set or get multiple configuration values efficiently using batch operations:
+
+```python
+from config_manager import ConfigManager
+
+config = ConfigManager()
+
+# Batch set
+config.batch_set({
+    'feature_flags.new_ui': True,
+    'feature_flags.advanced_analytics': False,
+    'database.host': 'localhost',
+    'database.port': 5432
+})
+
+# Batch get
+keys = ['feature_flags.new_ui', 'feature_flags.advanced_analytics', 'database.host', 'database.port', 'missing.key']
+results = config.batch_get(keys, default='N/A')
+print(results)
+```
+
+See `examples/batch_operations_example.py` for a full demo.
 
 ## Configuration Format
 
@@ -219,7 +322,64 @@ The system automatically maps environment variables to configuration keys:
 | `DEBUG` | `debug` | Debug mode flag |
 | `LOG_LEVEL` | `logging.level` | Logging level |
 
-## Security Features
+## API Reference
+
+### Initialization
+
+```python
+ConfigManager(
+    config_files: Optional[List[str]] = None,
+    enable_hot_reload: bool = True,
+    reload_interval: int = 30,
+    enable_encryption: bool = False,
+    encryption_key: Optional[bytes] = None
+)
+```
+
+### Constructor Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `config_files` | `List[str]` | `["config.json", "config.yaml"]` | Configuration file paths |
+| `enable_hot_reload` | `bool` | `True` | Enable automatic reloading |
+| `reload_interval` | `int` | `30` | Reload check interval (seconds) |
+| `enable_encryption` | `bool` | `False` | Enable value encryption |
+| `encryption_key` | `bytes` | `None` | Custom encryption key |
+
+### Core Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `get(key, default=None)` | Get configuration value | `Any` |
+| `set(key, value, encrypt=False)` | Set configuration value | `None` |
+| `get_database_config()` | Get database configuration | `Dict[str, Any]` |
+| `get_api_config()` | Get API configuration | `Dict[str, Any]` |
+| `get_metrics()` | Get access metrics | `Dict[str, Any]` |
+| `health_check()` | Perform health check | `Dict[str, Any]` |
+| `add_change_listener(callback)` | Add change listener | `None` |
+| `remove_change_listener(callback)` | Remove change listener | `None` |
+| `temporary_override(key, value)` | Context manager for temporary changes | `ContextManager` |
+| `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None` | Set multiple configuration values | `None` |
+| `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]` | Get multiple configuration values | `Dict[str, Any]` |
+
+- `get(key_path: str, default: Any = None) -> Any`: Retrieve a config value (dot notation supported).
+- `set(key_path: str, value: Any, encrypt: bool = False)`: Set a config value, optionally encrypted.
+- `get_database_config() -> Dict[str, Any]`: Get validated database config.
+- `get_api_config() -> Dict[str, Any]`: Get validated API config.
+- `add_change_listener(listener)`: Register a callback for config changes.
+- `remove_change_listener(listener)`: Remove a change listener.
+- `get_metrics() -> Dict[str, Any]`: Get access, cache, reload, and validation metrics.
+- `health_check() -> Dict[str, Any]`: Get health and status info.
+- `temporary_override(key_path, value)`: Context manager for temporary config overrides.
+- `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None`: Set multiple configuration values.
+- `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]`: Get multiple configuration values.
+
+## Security & Best Practices
+
+- **Encryption**: Use `enable_encryption=True` for sensitive values (e.g., passwords, API keys).
+- **Validation**: Extend or customize validators for your config schema.
+- **Observability**: Monitor metrics and logs for config access and reloads.
+- **Thread Safety**: Safe for use in multi-threaded applications.
 
 ### Encryption
 
@@ -247,16 +407,24 @@ password = config.get('database.password')  # Returns decrypted value
 ```python
 # Custom validator
 def validate_port(value):
-    port = int(value)
-    if not 1 <= port <= 65535:
-        raise ValueError(f"Invalid port: {port}")
-    return port
+  port = int(value)
+  if not 1 <= port <= 65535:
+    raise ValueError(f"Invalid port: {port}")
+  return port
 
 # Add validator
 config.validators['port'] = validate_port
 ```
 
 ## Monitoring & Metrics
+
+The manager tracks:
+
+- Access count, cache hits/misses
+- Reload count, validation errors
+- Last reload time, cache hit rate
+
+Use `get_metrics()` to retrieve metrics for monitoring and alerting.
 
 ### Health Check
 
@@ -296,6 +464,48 @@ The configuration manager automatically detects file changes and reloads configu
 3. **Atomic Updates**: Ensures consistent state during reloads
 4. **Change Notifications**: Triggers registered listeners
 5. **Error Handling**: Graceful handling of invalid configurations
+
+## Extending
+
+Register custom validators for new config sections (see `validators` dict). Integrate with your logging/monitoring stack as needed. Add new config sources using the `RemoteConfigLoader` interface (e.g., HTTP, S3, etcd, Consul).
+
+### Plugin/Extension Interfaces
+
+You can extend the configuration manager with custom source plugins and hook plugins:
+
+- **Source Plugins:** Inherit from `ConfigSourcePlugin`, implement `load()`, and register with `add_source_plugin()`.
+- **Hook Plugins:** Inherit from `ConfigHookPlugin`, implement `on_config_change()`, and register with `add_hook_plugin()`.
+
+#### Example Source Plugin
+
+```python
+from config_manager import ConfigSourcePlugin
+
+class VaultConfigPlugin(ConfigSourcePlugin):
+    def load(self):
+        # Fetch config from Vault (mocked)
+        return {"secrets": {"api_key": "vault-key"}}
+```
+
+#### Example Hook Plugin
+
+```python
+from config_manager import ConfigHookPlugin
+
+class SlackNotificationHook(ConfigHookPlugin):
+    def on_config_change(self, event, old_config, new_config):
+        print("Config changed! Notifying Slack...")
+```
+
+#### Registering Plugins
+
+```python
+config = ConfigManager()
+config.add_source_plugin(VaultConfigPlugin())
+config.add_hook_plugin(SlackNotificationHook())
+```
+
+See `examples/plugin_examples.py` for a full demo.
 
 ## Testing
 
@@ -370,34 +580,6 @@ python -m unittest tests/integration_test.py
        }
    ```
 
-## Configuration Reference
-
-### Constructor Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `config_files` | `List[str]` | `["config.json", "config.yaml"]` | Configuration file paths |
-| `enable_hot_reload` | `bool` | `True` | Enable automatic reloading |
-| `reload_interval` | `int` | `30` | Reload check interval (seconds) |
-| `enable_encryption` | `bool` | `False` | Enable value encryption |
-| `encryption_key` | `bytes` | `None` | Custom encryption key |
-
-### Methods
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `get(key, default=None)` | Get configuration value | `Any` |
-| `set(key, value, encrypt=False)` | Set configuration value | `None` |
-| `get_database_config()` | Get database configuration | `Dict[str, Any]` |
-| `get_api_config()` | Get API configuration | `Dict[str, Any]` |
-| `get_metrics()` | Get access metrics | `Dict[str, Any]` |
-| `health_check()` | Perform health check | `Dict[str, Any]` |
-| `add_change_listener(callback)` | Add change listener | `None` |
-| `remove_change_listener(callback)` | Remove change listener | `None` |
-| `temporary_override(key, value)` | Context manager for temporary changes | `ContextManager` |
-| `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None` | Set multiple configuration values | `None` |
-| `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]` | Get multiple configuration values | `Dict[str, Any]` |
-
 ## Contributing
 
 1. Fork the repository
@@ -409,198 +591,3 @@ python -m unittest tests/integration_test.py
 ## License
 
 MIT License - see LICENSE file for details.
-
----
-
-## Installation
-
-Add the component to your project (assuming you have the repo cloned):
-
-```bash
-cd components/config-management/configuration-manager
-pip install -r requirements.txt  
-```
-
-**Dependencies:**
-
-- Python 3.7+
-- `pyyaml`, `cryptography`
-
----
-
-## Usage
-
-### Usage & Example Scenarios
-
-All usage, including quick-start and advanced scenarios, is provided as standalone scripts in the `examples/` directory. Here is a key example:
-
-- `examples/basic_usage.py`: Initialize the configuration manager, access configs, view metrics, and use temporary overrides.
-
-See the `examples/` directory and `examples/README.md` for more advanced and scenario-based usage scripts.
-
-**How to run an example:**
-
-> **Important:** Always run the example scripts with the parent directory in your `PYTHONPATH` so that imports work correctly.
-
-On Windows PowerShell:
-
-```pwsh
-$env:PYTHONPATH="."; python .\examples\basic_usage.py
-```
-
-On Linux/macOS/bash:
-
-```bash
-PYTHONPATH=. python ./examples/basic_usage.py
-```
-
-Replace `basic_usage.py` with any other example script as needed.
-
-These scripts demonstrate real-world backend scenarios, including config loading, validation, encryption, and observability. You can use or extend them for your own use-cases.
-
-#### Minimal Quick-Start (copy-paste into your own script)
-
-```python
-from config_manager import ConfigManager
-
-config = ConfigManager(
-    config_files=["config.json", "config.yaml"],
-    enable_hot_reload=True,
-    enable_encryption=True
-)
-```
-
----
-
-### Environment Variable Overrides
-
-Set environment variables to override config values:
-
-```bash
-export DATABASE_HOST=prod-db.example.com
-export API_KEY=prod-api-key
-```
-
----
-
-## API Reference
-
-### Initialization
-
-```python
-ConfigManager(
-    config_files: Optional[List[str]] = None,
-    enable_hot_reload: bool = True,
-    reload_interval: int = 30,
-    enable_encryption: bool = False,
-    encryption_key: Optional[bytes] = None
-)
-```
-
-### Core Methods
-
-- `get(key_path: str, default: Any = None) -> Any`: Retrieve a config value (dot notation supported).
-- `set(key_path: str, value: Any, encrypt: bool = False)`: Set a config value, optionally encrypted.
-- `get_database_config() -> Dict[str, Any]`: Get validated database config.
-- `get_api_config() -> Dict[str, Any]`: Get validated API config.
-- `add_change_listener(listener)`: Register a callback for config changes.
-- `remove_change_listener(listener)`: Remove a change listener.
-- `get_metrics() -> Dict[str, Any]`: Get access, cache, reload, and validation metrics.
-- `health_check() -> Dict[str, Any]`: Get health and status info.
-- `temporary_override(key_path, value)`: Context manager for temporary config overrides.
-- `batch_set(values: Dict[str, Any], encrypt: bool = False) -> None`: Set multiple configuration values.
-- `batch_get(keys: List[str], default: Any = None) -> Dict[str, Any]`: Get multiple configuration values.
-
----
-
-## Security & Best Practices
-
-- **Encryption**: Use `enable_encryption=True` for sensitive values (e.g., passwords, API keys).
-- **Validation**: Extend or customize validators for your config schema.
-- **Observability**: Monitor metrics and logs for config access and reloads.
-- **Thread Safety**: Safe for use in multi-threaded applications.
-
----
-
-## Metrics & Observability
-
-The manager tracks:
-
-- Access count, cache hits/misses
-- Reload count, validation errors
-- Last reload time, cache hit rate
-
-Use `get_metrics()` to retrieve metrics for monitoring and alerting.
-
----
-
-## Extending
-
-Register custom validators for new config sections (see `validators` dict).
-Integrate with your logging/monitoring stack as needed.
-Add new config sources using the `RemoteConfigLoader` interface (e.g., HTTP, S3, etcd, Consul).
-
-### Plugin/Extension Interfaces
-
-You can extend the configuration manager with custom source plugins and hook plugins:
-
-- **Source Plugins:** Inherit from `ConfigSourcePlugin`, implement `load()`, and register with `add_source_plugin()`.
-- **Hook Plugins:** Inherit from `ConfigHookPlugin`, implement `on_config_change()`, and register with `add_hook_plugin()`.
-
-#### Example Source Plugin
-
-```python
-from config_manager import ConfigSourcePlugin
-
-class VaultConfigPlugin(ConfigSourcePlugin):
-    def load(self):
-        # Fetch config from Vault (mocked)
-        return {"secrets": {"api_key": "vault-key"}}
-```
-
-#### Example Hook Plugin
-
-```python
-from config_manager import ConfigHookPlugin
-
-class SlackNotificationHook(ConfigHookPlugin):
-    def on_config_change(self, event, old_config, new_config):
-        print("Config changed! Notifying Slack...")
-```
-
-#### Registering Plugins
-
-```python
-config = ConfigManager()
-config.add_source_plugin(VaultConfigPlugin())
-config.add_hook_plugin(SlackNotificationHook())
-```
-
-See `examples/plugin_examples.py` for a full demo.
-
----
-
-### Batch Operations Example
-
-You can set or get multiple configuration values efficiently using batch operations:
-
-```python
-from config_manager import ConfigManager
-
-config = ConfigManager()
-
-# Batch set
-config.batch_set({
-    'feature_flags.new_ui': True,
-    'feature_flags.advanced_analytics': False,
-    'database.host': 'localhost',
-    'database.port': 5432
-})
-
-# Batch get
-keys = ['feature_flags.new_ui', 'feature_flags.advanced_analytics', 'database.host', 'database.port', 'missing.key']
-results = config.batch_get(keys, default='N/A')
-print(results)
-```
-
-See `examples/batch_operations_example.py` for a full demo.
