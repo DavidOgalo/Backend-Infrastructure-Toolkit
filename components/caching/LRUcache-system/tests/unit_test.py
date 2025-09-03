@@ -1,6 +1,8 @@
-import unittest
 import time
+import unittest
+
 from LRUcache_system import LRUCache
+
 
 class TestLRUCacheUnit(unittest.TestCase):
     def setUp(self):
@@ -39,6 +41,7 @@ class TestLRUCacheUnit(unittest.TestCase):
         self.assertEqual(self.cache["foo"], "bar")
         del self.cache["foo"]
         self.assertFalse("foo" in self.cache)
+
 
 if __name__ == "__main__":
     unittest.main()

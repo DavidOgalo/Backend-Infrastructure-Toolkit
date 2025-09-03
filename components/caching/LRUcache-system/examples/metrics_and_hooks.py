@@ -1,7 +1,8 @@
 """
 Metrics and event hooks scenario: Track cache metrics and observe events.
 """
-from LRUcache_system import LRUCache, LoggingHook
+
+from LRUcache_system import LoggingHook, LRUCache
 
 cache = LRUCache[str, int](max_size=2, enable_metrics=True)
 cache.add_hook(LoggingHook())

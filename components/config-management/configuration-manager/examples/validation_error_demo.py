@@ -1,7 +1,8 @@
 """
 Validation error demo: Shows how schema validation errors are handled.
 """
-from config_manager import ConfigManager, ConfigError
+
+from config_manager import ConfigError, ConfigManager
 
 # Simulate a config missing required fields
 bad_config = {
@@ -13,6 +14,7 @@ bad_config = {
 
 with open("bad_config.json", "w") as f:
     import json
+
     json.dump(bad_config, f)
 
 try:
@@ -21,4 +23,5 @@ except ConfigError as e:
     print("Validation error caught:", e)
 finally:
     import os
+
     os.remove("bad_config.json")

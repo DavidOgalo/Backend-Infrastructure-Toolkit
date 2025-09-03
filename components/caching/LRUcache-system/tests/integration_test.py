@@ -1,23 +1,30 @@
-import unittest
 import time
-import logging
-from LRUcache_system import LRUCache, LoggingHook, CacheHook
+import unittest
+
+from LRUcache_system import CacheHook, LRUCache
+
 
 class TestLRUCacheIntegration(unittest.TestCase):
     def setUp(self):
         self.cache = LRUCache(max_size=5, default_ttl=0.2, enable_metrics=True)
         self.hook_events = []
+
         class TestHook(CacheHook):
             def on_hit(self, key, value, entry):
                 self.hook_events.append(("hit", key))
+
             def on_miss(self, key):
                 self.hook_events.append(("miss", key))
+
             def on_set(self, key, value, entry):
                 self.hook_events.append(("set", key))
+
             def on_expire(self, key, entry):
                 self.hook_events.append(("expire", key))
+
             def on_evict(self, key, entry):
                 self.hook_events.append(("evict", key))
+
         self.test_hook = TestHook()
         self.test_hook.hook_events = self.hook_events
         self.cache.add_hook(self.test_hook)
@@ -55,6 +62,7 @@ class TestLRUCacheIntegration(unittest.TestCase):
         new_cache = LRUCache(max_size=5)
         new_cache.deserialize(data)
         self.assertEqual(new_cache.get("foo"), "bar")
+
 
 if __name__ == "__main__":
     unittest.main()

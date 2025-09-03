@@ -2,6 +2,7 @@
 Basic usage example for the LogAnalyticsEngine.
 Demonstrates log ingestion and a simple query.
 """
+
 from log_analytics_engine import LogAnalyticsEngine, LogEntry
 
 engine = LogAnalyticsEngine()
@@ -11,7 +12,7 @@ log = LogEntry(
     level="ERROR",
     message="Database connection failed",
     source="db",
-    tags=["db", "critical"]
+    tags=["db", "critical"],
 )
 engine.ingest_log(log)
 

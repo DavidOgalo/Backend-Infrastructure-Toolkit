@@ -1,6 +1,7 @@
 """
 Serialization and deserialization scenario: Save and restore cache state.
 """
+
 from LRUcache_system import LRUCache
 
 cache = LRUCache[str, int](max_size=2)

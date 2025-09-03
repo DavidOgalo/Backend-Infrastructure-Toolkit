@@ -330,9 +330,21 @@ class ConfigManager:
 
             # Parse based on file extension
             if file_path.suffix.lower() == ".json":
-                file_config = json.loads(content)
+                try:
+                    file_config = json.loads(content)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON in {config_file}: {e}")
+                    raise ConfigError(
+                        f"Invalid JSON format: {e}", ConfigSource.FILE, config_file
+                    ) from e
             elif file_path.suffix.lower() in [".yaml", ".yml"]:
-                file_config = yaml.safe_load(content)
+                try:
+                    file_config = yaml.safe_load(content)
+                except yaml.YAMLError as e:
+                    logger.error(f"Invalid YAML in {config_file}: {e}")
+                    raise ConfigError(
+                        f"Invalid YAML format: {e}", ConfigSource.FILE, config_file
+                    ) from e
             else:
                 logger.warning(f"Unsupported file format: {config_file}")
                 return
@@ -342,21 +354,11 @@ class ConfigManager:
 
             logger.info(f"Loaded configuration from {config_file}")
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in {config_file}: {e}")
-            raise ConfigError(
-                f"Invalid JSON format: {e}", ConfigSource.FILE, config_file
-            )
-        except yaml.YAMLError as e:
-            logger.error(f"Invalid YAML in {config_file}: {e}")
-            raise ConfigError(
-                f"Invalid YAML format: {e}", ConfigSource.FILE, config_file
-            )
         except Exception as e:
             logger.error(f"Error loading {config_file}: {e}")
             raise ConfigError(
                 f"Failed to load config file: {e}", ConfigSource.FILE, config_file
-            )
+            ) from e
 
     def _load_environment_overrides(self):
         """Load environment variable overrides"""
@@ -387,7 +389,7 @@ class ConfigManager:
         except Exception as e:
             self.metrics.validation_errors += 1
             logger.error(f"Configuration validation failed: {e}")
-            raise ConfigError(f"Validation failed: {e}")
+            raise ConfigError(f"Validation failed: {e}") from e
 
     def _deep_merge(self, target: Dict[str, Any], source: Dict[str, Any]):
         """Deep merge two dictionaries"""
@@ -516,7 +518,7 @@ class ConfigManager:
                     return default
                 raise ConfigError(
                     f"Configuration key not found: {key_path}", key=key_path
-                )
+                ) from None
 
     def set(self, key_path: str, value: Any, encrypt: bool = False):
         """Set configuration value with optional encryption"""

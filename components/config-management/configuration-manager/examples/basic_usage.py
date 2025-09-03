@@ -2,15 +2,18 @@
 Basic usage example for the production-ready ConfigManager.
 Demonstrates initialization, config access, metrics, and temporary override.
 """
-from config_manager import ConfigManager, ConfigError
+
+from config_manager import ConfigManager
+
 
 def on_config_change(event, old_config, new_config):
     print(f"Configuration changed: {event}")
 
+
 config = ConfigManager(
     config_files=["config.json", "config.yaml"],
     enable_hot_reload=True,
-    enable_encryption=True
+    enable_encryption=True,
 )
 
 config.add_change_listener(on_config_change)
@@ -32,6 +35,6 @@ health = config.health_check()
 print(f"Health status: {health}")
 
 print("\n=== Temporary Override ===")
-with config.temporary_override('database.host', 'temp-host'):
+with config.temporary_override("database.host", "temp-host"):
     print(f"Temporary host: {config.get('database.host')}")
 print(f"Original host: {config.get('database.host')}")

@@ -1,7 +1,9 @@
 """
 TTL expiry scenario: Demonstrates automatic expiration of cache items.
 """
+
 import time
+
 from LRUcache_system import LRUCache
 
 cache = LRUCache[str, str](max_size=2, default_ttl=2.0)

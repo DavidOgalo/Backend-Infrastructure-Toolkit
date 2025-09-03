@@ -2,25 +2,30 @@
 A generic, production-ready Binary Search Tree (BST) implementation for ordered data access, range queries, and indexing.
 Supports any comparable key type and is suitable for use as a utility in backend systems.
 """
-from typing import Optional, TypeVar, Generic, List, Tuple, Iterator
 
-K = TypeVar('K')  # Key type (must be comparable)
-V = TypeVar('V')  # Value type
+from typing import Generic, Iterator, List, Optional, Tuple, TypeVar
+
+K = TypeVar("K")  # Key type (must be comparable)
+V = TypeVar("V")  # Value type
+
 
 class TreeNode(Generic[K, V]):
     """Node for a generic binary search tree."""
+
     def __init__(self, key: K, value: V):
         self.key: K = key
         self.value: V = value
-        self.left: Optional['TreeNode[K, V]'] = None
-        self.right: Optional['TreeNode[K, V]'] = None
+        self.left: Optional["TreeNode[K, V]"] = None
+        self.right: Optional["TreeNode[K, V]"] = None
         self.height: int = 1  # For AVL balancing (future use)
+
 
 class BinarySearchTree(Generic[K, V]):
     """
     Generic BST for maintaining sorted data with O(log n) operations.
     Supports insertion, search, range queries, and in-order traversal.
     """
+
     def __init__(self):
         self.root: Optional[TreeNode[K, V]] = None
         self._size: int = 0
@@ -31,7 +36,9 @@ class BinarySearchTree(Generic[K, V]):
         if inserted:
             self._size += 1
 
-    def _insert_recursive(self, node: Optional[TreeNode[K, V]], key: K, value: V) -> Tuple[Optional[TreeNode[K, V]], bool]:
+    def _insert_recursive(
+        self, node: Optional[TreeNode[K, V]], key: K, value: V
+    ) -> Tuple[Optional[TreeNode[K, V]], bool]:
         if node is None:
             return TreeNode(key, value), True
         if key < node.key:
@@ -52,7 +59,9 @@ class BinarySearchTree(Generic[K, V]):
         node = self._search_recursive(self.root, key)
         return node.value if node else None
 
-    def _search_recursive(self, node: Optional[TreeNode[K, V]], key: K) -> Optional[TreeNode[K, V]]:
+    def _search_recursive(
+        self, node: Optional[TreeNode[K, V]], key: K
+    ) -> Optional[TreeNode[K, V]]:
         if node is None:
             return None
         if key == node.key:
@@ -74,7 +83,9 @@ class BinarySearchTree(Generic[K, V]):
         self._inorder_recursive(self.root, result)
         return result
 
-    def _inorder_recursive(self, node: Optional[TreeNode[K, V]], result: List[Tuple[K, V]]):
+    def _inorder_recursive(
+        self, node: Optional[TreeNode[K, V]], result: List[Tuple[K, V]]
+    ):
         if node:
             self._inorder_recursive(node.left, result)
             result.append((node.key, node.value))
@@ -92,7 +103,13 @@ class BinarySearchTree(Generic[K, V]):
         self._range_query_recursive(self.root, start_key, end_key, result)
         return result
 
-    def _range_query_recursive(self, node: Optional[TreeNode[K, V]], start: K, end: K, result: List[Tuple[K, V]]):
+    def _range_query_recursive(
+        self,
+        node: Optional[TreeNode[K, V]],
+        start: K,
+        end: K,
+        result: List[Tuple[K, V]],
+    ):
         if node is None:
             return
         if start <= node.key <= end:

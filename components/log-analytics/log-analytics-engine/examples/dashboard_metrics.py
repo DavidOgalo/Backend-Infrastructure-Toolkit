@@ -1,9 +1,12 @@
 """
 Example: Dashboard metrics and summary statistics with LogAnalyticsEngine
 """
+
 import random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
+
 from log_analytics_engine import LogAnalyticsEngine, LogEntry
+
 
 def main():
     engine = LogAnalyticsEngine()
@@ -19,8 +22,9 @@ def main():
         "Cache miss",
         "Cache hit",
         "Permission denied",
-        "Resource not found"
+        "Resource not found",
     ]
+
     def random_log():
         now = datetime.now(timezone.utc)
         return LogEntry(
@@ -28,8 +32,9 @@ def main():
             level=random.choice(levels),
             message=random.choice(messages),
             source=random.choice(sources),
-            tags=[random.choice(["auth", "api", "db", "worker", "cache"])]
+            tags=[random.choice(["auth", "api", "db", "worker", "cache"])],
         )
+
     # Ingest 200 logs
     for _ in range(200):
         engine.ingest_log(random_log())
@@ -40,6 +45,7 @@ def main():
     print(f"Logs by level: {stats['levels']}")
     print(f"Logs by source: {stats['sources']}")
     print(f"Unique keywords: {stats['keywords']}")
+
 
 if __name__ == "__main__":
     main()

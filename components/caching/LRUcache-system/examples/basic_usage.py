@@ -2,7 +2,8 @@
 Basic usage example for the LRUCache system.
 Demonstrates basic set/get, batch operations, metrics, and health check.
 """
-from LRUcache_system import LRUCache, LoggingHook
+
+from LRUcache_system import LoggingHook, LRUCache
 
 # Create a cache with a max size of 5 and 10s TTL
 cache = LRUCache[str, dict](max_size=5, default_ttl=10.0, enable_metrics=True)
@@ -17,10 +18,7 @@ print(f"User 1: {user}")
 
 # Batch operations
 with cache.batch_operations():
-    cache.set_many({
-        "user:2": {"name": "Jane"},
-        "user:3": {"name": "Bob"}
-    })
+    cache.set_many({"user:2": {"name": "Jane"}, "user:3": {"name": "Bob"}})
 users = cache.get_many(["user:1", "user:2"])
 print(f"Batch get result: {users}")
 

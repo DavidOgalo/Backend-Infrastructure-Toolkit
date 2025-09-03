@@ -2,16 +2,19 @@
 A generic, production-ready hash table implementation for fast lookups, insertions, and deletions.
 Suitable for use as a utility in backend systems (caching, session management, etc).
 """
-from typing import TypeVar, Generic, Optional, List, Tuple, Iterator, Hashable
 
-K = TypeVar('K', bound=Hashable)
-V = TypeVar('V')
+from typing import Generic, Hashable, Iterator, List, Optional, Tuple, TypeVar
+
+K = TypeVar("K", bound=Hashable)
+V = TypeVar("V")
+
 
 class HashTable(Generic[K, V]):
     """
     Generic hash table for caching and fast lookups.
     Supports any hashable key type and provides Pythonic dunder methods.
     """
+
     def __init__(self, initial_size: int = 16, load_factor_threshold: float = 0.75):
         self._size = initial_size
         self._count = 0
