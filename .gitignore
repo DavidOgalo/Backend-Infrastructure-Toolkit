@@ -1,8 +1,12 @@
-.venv
-test.py
+# Virtual environment
+.venv/
+
+# Python cache
 __pycache__/
 *.pyc
-.pre-commit-config.yaml
+
+# Ruff cache
 .ruff_cache/
-.ruff.toml
-pyproject.toml
+
+# Local/dev-only files
+test.py
