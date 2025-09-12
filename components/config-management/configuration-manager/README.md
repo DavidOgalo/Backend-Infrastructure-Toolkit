@@ -306,7 +306,7 @@ feature_flags:
   advanced_analytics: true
 ```
 
-## 🔧 Environment Variables
+## Environment Variables
 
 The system automatically maps environment variables to configuration keys:
 
