@@ -100,7 +100,7 @@ Navigate using the links above or browse the `components/` folder for a categori
 
 #### Messaging & Event Processing
 
-- **Message Queue**
+- [Message Queue](components/messaging/message-queue/)
 - **Event Sourcing Engine**
 
 #### Distributed Systems
