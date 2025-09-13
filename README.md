@@ -73,22 +73,24 @@ backend-infrastructure-toolkit/
 - **[Distributed Systems](#distributed-systems)**  
 - **[Security & Access](#security--access)**  
 
+
 Navigate using the links above or browse the `components/` folder for a categorized view.
+**Implemented system names below are clickable links that take you directly to their directories for quick access to code, documentation, and examples.**
 
 #### Configuration & Management
 
-- **Configuration Management System**
-- **Feature Flags**
+- [Configuration Management System](components/config-management/configuration-manager/)
+- Feature Flags
 
 #### Caching & Storage
 
-- **Caching System (LRU, TTL)**
-- **Database Connection Pool**
+- [Caching System (LRU, TTL)](components/caching/LRUcache-system/)
+- Database Connection Pool
 
 #### Observability & Analytics
 
-- **Log Analytics Engine**
-- **Metrics Collector**
+- [Log Analytics Engine](components/log-analytics/log-analytics-engine/)
+- Metrics Collector
 
 #### Resilience & Reliability
 
